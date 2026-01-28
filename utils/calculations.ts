@@ -1,4 +1,3 @@
-
 import { RawWaterData, TargetWaterData, PlantData, CalculationResults } from '../types';
 
 export const calculateSoftening = (
@@ -13,9 +12,9 @@ export const calculateSoftening = (
   const MW_MgOH2 = 58.3;
 
   // 1. Calculations are based on CaCO₃ equivalents (mg/L)
-  // Hardness to remove
-  const caToRemove = Math.max(0, raw.calcium - target.calcium);
-  const mgToRemove = Math.max(0, raw.magnesium - target.magnesium);
+  // Hardness to remove (theoretical based on targets)
+  const caToRemoveTarget = Math.max(0, raw.calcium - target.calcium);
+  const mgToRemoveTarget = Math.max(0, raw.magnesium - target.magnesium);
 
   /**
    * STOICHIOMETRIC RULES FOR LIME & SODA ASH:
@@ -23,40 +22,48 @@ export const calculateSoftening = (
    * 2. Mg Carbonate Hardness (Mg-CH): 2 moles Lime per mole Mg
    * 3. Mg Non-Carbonate Hardness (Mg-NCH): 1 mole Lime + 1 mole Soda Ash per mole Mg
    * 4. Ca Non-Carbonate Hardness (Ca-NCH): 1 mole Soda Ash per mole Ca
-   * 
-   * Maximizing Lime: Use Lime for all Mg removal and all available Alkalinity for Ca removal.
    */
 
   // Determine available alkalinity (CH)
   let alkalinityRemaining = raw.alkalinity;
 
   // Magnesium removal stoichiometry
-  // Mg-CH removal consumes alkalinity.
-  const mgCHToRemove = Math.min(mgToRemove, alkalinityRemaining);
-  const mgNCHToRemove = Math.max(0, mgToRemove - mgCHToRemove);
+  const mgCHToRemove = Math.min(mgToRemoveTarget, alkalinityRemaining);
+  const mgNCHToRemove = Math.max(0, mgToRemoveTarget - mgCHToRemove);
   alkalinityRemaining -= mgCHToRemove;
 
   // Calcium removal stoichiometry
-  // Ca-CH removal consumes alkalinity.
-  const caCHToRemove = Math.min(caToRemove, alkalinityRemaining);
-  const caNCHToRemove = Math.max(0, caToRemove - caCHToRemove);
+  const caCHToRemove = Math.min(caToRemoveTarget, alkalinityRemaining);
+  const caNCHToRemove = Math.max(0, caToRemoveTarget - caCHToRemove);
   alkalinityRemaining -= caCHToRemove;
 
+  // Actual removals if Soda Ash is disabled
+  const actualMgNCHRemoved = plant.sodaAshEnabled ? mgNCHToRemove : 0;
+  const actualCaNCHRemoved = plant.sodaAshEnabled ? caNCHToRemove : 0;
+
+  // Effective removals
+  const finalMgRemoved = mgCHToRemove + actualMgNCHRemoved;
+  const finalCaRemoved = caCHToRemove + actualCaNCHRemoved;
+
   // Lime Dose (as CaCO₃ eq)
-  // 2 * Mg-CH + 1 * Mg-NCH + 1 * Ca-CH
+  // Note: Even if soda ash is off, lime is still needed to convert Mg-NCH to Mg(OH)2 
+  // but the Ca released (as Ca-NCH) stays in the water unless Soda Ash is added.
   const limeDoseAsCaCO3 = (2 * mgCHToRemove) + (1 * mgNCHToRemove) + (1 * caCHToRemove);
   const limeDoseMgL = limeDoseAsCaCO3 * (MW_CaOH2 / MW_CaCO3);
 
   // Soda Ash Dose (as CaCO₃ eq)
-  // 1 * Mg-NCH + 1 * Ca-NCH
-  const sodaAshDoseAsCaCO3 = mgNCHToRemove + caNCHToRemove;
+  const sodaAshDoseAsCaCO3 = plant.sodaAshEnabled ? (mgNCHToRemove + caNCHToRemove) : 0;
   const sodaAshDoseMgL = sodaAshDoseAsCaCO3 * (MW_Na2CO3 / MW_CaCO3);
 
+  // Achieved Quality
+  const achievedCa = raw.calcium - finalCaRemoved;
+  const achievedMg = raw.magnesium - finalMgRemoved;
+  const achievedTotal = achievedCa + achievedMg;
+
   // 4. Softening pH Estimation
-  // Mg removal requires high pH (11+)
   let softeningPh = 10.3;
-  if (mgToRemove > 10) softeningPh = 11.0;
-  if (mgToRemove > 30) softeningPh = 11.3;
+  if (finalMgRemoved > 10) softeningPh = 11.0;
+  if (finalMgRemoved > 30) softeningPh = 11.3;
 
   // 5. Daily Requirements
   const flowM3Day = plant.dailyFlow * 1000;
@@ -65,8 +72,8 @@ export const calculateSoftening = (
 
   // 6. Sludge Production (Dry Mass)
   // CaCO₃ produced from Ca removal + CaCO₃ produced from Lime reaction
-  const sludgeCaCO3 = (caToRemove + limeDoseAsCaCO3) * 1.0; 
-  const sludgeMgOH2 = mgToRemove * (MW_MgOH2 / MW_CaCO3);
+  const sludgeCaCO3 = (finalCaRemoved + limeDoseAsCaCO3) * 1.0; 
+  const sludgeMgOH2 = finalMgRemoved * (MW_MgOH2 / MW_CaCO3);
   const totalSludgeMgL = sludgeCaCO3 + sludgeMgOH2;
   const totalSludgeDaily = (totalSludgeMgL * flowM3Day) / 1000; // kg/d
 
@@ -76,18 +83,13 @@ export const calculateSoftening = (
   const solidsPerHour = totalSludgeDaily / 24;
   const solidsPerUnit = solidsPerHour / plant.clarifierCount;
 
-  // Required Area based on Hydraulics (m/h)
   const areaHydraulic = plant.hlr > 0 ? flowPerUnit / plant.hlr : 0;
-  
-  // Required Area based on Solids Loading (kg/m²/h)
   const areaSolids = plant.solidsLoadingRate > 0 ? solidsPerUnit / plant.solidsLoadingRate : 0;
 
-  // Final Design Area (Max of both)
   const clarifierArea = Math.max(areaHydraulic, areaSolids);
   const governingParameter: 'Hydraulic' | 'Solids' = areaHydraulic >= areaSolids ? 'Hydraulic' : 'Solids';
   
   const clarifierDiameter = clarifierArea > 0 ? Math.sqrt((4 * clarifierArea) / Math.PI) : 0;
-  
   const actualHLR = clarifierArea > 0 ? flowPerUnit / clarifierArea : 0;
   const actualSolidsLoading = clarifierArea > 0 ? solidsPerUnit / clarifierArea : 0;
 
@@ -103,6 +105,11 @@ export const calculateSoftening = (
     actualHLR,
     actualSolidsLoading,
     flowPerHour,
-    governingParameter
+    governingParameter,
+    achieved: {
+      calcium: achievedCa,
+      magnesium: achievedMg,
+      totalHardness: achievedTotal
+    }
   };
 };
