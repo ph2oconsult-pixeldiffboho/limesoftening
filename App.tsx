@@ -31,6 +31,7 @@ const App: React.FC = () => {
     clarifierCount: 2,
     hlr: 1.5,
     solidsLoadingRate: 5.0,
+    sodaAshEnabled: true,
   });
 
   // History State
@@ -83,14 +84,15 @@ const App: React.FC = () => {
 
   // Chart Data
   const hardnessChartData = [
-    { name: 'Raw Water', Calcium: raw.calcium, Magnesium: raw.magnesium, Total: raw.totalHardness },
-    { name: 'Target', Calcium: target.calcium, Magnesium: target.magnesium, Total: target.totalHardness },
+    { name: 'Raw Water', Calcium: raw.calcium, Magnesium: raw.magnesium },
+    { name: 'Target', Calcium: target.calcium, Magnesium: target.magnesium },
+    { name: 'Achieved', Calcium: results.achieved.calcium, Magnesium: results.achieved.magnesium },
   ];
 
   const chemicalData = [
     { name: 'Lime (kg/d)', value: results.totalLimeDaily },
     { name: 'Soda Ash (kg/d)', value: results.totalSodaDaily },
-  ];
+  ].filter(d => d.value > 0);
 
   const COLORS = ['#2563eb', '#9333ea', '#10b981', '#f59e0b'];
 
@@ -98,7 +100,6 @@ const App: React.FC = () => {
     const numVal = parseFloat(val) || 0;
     setRaw(prev => {
       const next = { ...prev, [field]: numVal };
-      // Auto-update total hardness if Ca or Mg changes
       if (field === 'calcium' || field === 'magnesium') {
         next.totalHardness = next.calcium + next.magnesium;
       }
@@ -110,7 +111,6 @@ const App: React.FC = () => {
     const numVal = parseFloat(val) || 0;
     setTarget(prev => {
       const next = { ...prev, [field]: numVal };
-      // Auto-update total hardness if Ca or Mg changes
       if (field === 'calcium' || field === 'magnesium') {
         next.totalHardness = next.calcium + next.magnesium;
       }
@@ -118,9 +118,11 @@ const App: React.FC = () => {
     });
   };
 
-  const handlePlantChange = (field: keyof PlantData, val: string) => {
-    setPlant(prev => ({ ...prev, [field]: parseFloat(val) || 0 }));
+  const handlePlantChange = (field: keyof PlantData, val: string | boolean) => {
+    setPlant(prev => ({ ...prev, [field]: typeof val === 'string' ? parseFloat(val) || 0 : val }));
   };
+
+  const targetsMet = results.achieved.totalHardness <= target.totalHardness + 1;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
@@ -215,6 +217,19 @@ const App: React.FC = () => {
             </InputSection>
 
             <InputSection title="Plant Configuration" icon="fa-industry">
+              <div className="flex flex-col justify-center">
+                <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-widest">Dosing Comparison</label>
+                <div className="flex items-center gap-3 bg-slate-100 p-2 rounded-lg">
+                  <span className={`text-xs font-bold ${!plant.sodaAshEnabled ? 'text-blue-600' : 'text-slate-400'}`}>Lime Only</span>
+                  <button 
+                    onClick={() => handlePlantChange('sodaAshEnabled', !plant.sodaAshEnabled)}
+                    className={`relative w-12 h-6 rounded-full transition-colors ${plant.sodaAshEnabled ? 'bg-blue-600' : 'bg-slate-300'}`}
+                  >
+                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${plant.sodaAshEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                  </button>
+                  <span className={`text-xs font-bold ${plant.sodaAshEnabled ? 'text-blue-600' : 'text-slate-400'}`}>Lime + Soda</span>
+                </div>
+              </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1 tracking-wider">Daily Flow (ML/d)</label>
                 <input type="number" value={plant.dailyFlow} onChange={e => handlePlantChange('dailyFlow', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
@@ -235,10 +250,18 @@ const App: React.FC = () => {
 
             {/* Hardness Comparison Chart */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-              <h3 className="font-semibold text-slate-800 mb-6 flex items-center gap-2">
-                <i className="fa-solid fa-chart-column text-blue-600"></i>
-                Hardness Profile <span className="text-sm font-normal text-slate-500">(mg/L as CaCO₃)</span>
-              </h3>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                  <i className="fa-solid fa-chart-column text-blue-600"></i>
+                  Hardness Comparison <span className="text-sm font-normal text-slate-500">(mg/L as CaCO₃)</span>
+                </h3>
+                {!targetsMet && (
+                  <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-100 animate-pulse">
+                    <i className="fa-solid fa-triangle-exclamation text-xs"></i>
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Targets Not Fully Met</span>
+                  </div>
+                )}
+              </div>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={hardnessChartData}>
@@ -260,7 +283,7 @@ const App: React.FC = () => {
           <div className="lg:col-span-5 space-y-6">
             
             {/* Chemical Dose Stats */}
-            <div className="bg-gradient-to-br from-blue-600 to-blue-800 text-white rounded-xl p-6 shadow-xl">
+            <div className={`bg-gradient-to-br transition-colors duration-500 ${plant.sodaAshEnabled ? 'from-blue-600 to-blue-800' : 'from-indigo-600 to-indigo-800'} text-white rounded-xl p-6 shadow-xl`}>
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <i className="fa-solid fa-calculator"></i>
                 Required Chemical Doses
@@ -270,7 +293,7 @@ const App: React.FC = () => {
                   <p className="text-blue-100 text-xs font-medium mb-1">Lime Dose Ca(OH)₂</p>
                   <p className="text-2xl font-bold">{results.limeDose.toFixed(1)} <span className="text-sm font-normal">mg/L</span></p>
                 </div>
-                <div className="bg-white/10 p-4 rounded-lg backdrop-blur-sm border border-white/10">
+                <div className={`bg-white/10 p-4 rounded-lg backdrop-blur-sm border border-white/10 transition-opacity ${!plant.sodaAshEnabled ? 'opacity-30' : 'opacity-100'}`}>
                   <p className="text-blue-100 text-xs font-medium mb-1">Soda Ash Dose Na₂CO₃</p>
                   <p className="text-2xl font-bold">{results.sodaAshDose.toFixed(1)} <span className="text-sm font-normal">mg/L</span></p>
                 </div>
@@ -279,8 +302,8 @@ const App: React.FC = () => {
                   <p className="text-2xl font-bold">{results.softeningPh.toFixed(1)}</p>
                 </div>
                 <div className="bg-white/10 p-4 rounded-lg backdrop-blur-sm border border-white/10">
-                  <p className="text-blue-100 text-xs font-medium mb-1 tracking-wider">Flow Rate</p>
-                  <p className="text-2xl font-bold">{results.flowPerHour.toFixed(0)} <span className="text-sm font-normal">m³/h</span></p>
+                  <p className="text-blue-100 text-xs font-medium mb-1 tracking-wider">Achieved Total Hardness</p>
+                  <p className={`text-2xl font-bold ${!targetsMet ? 'text-amber-200' : 'text-white'}`}>{results.achieved.totalHardness.toFixed(0)} <span className="text-sm font-normal">mg/L</span></p>
                 </div>
               </div>
             </div>
@@ -302,7 +325,7 @@ const App: React.FC = () => {
                   <p className="text-lg font-bold text-slate-800">{results.totalLimeDaily.toLocaleString()} kg/d</p>
                 </div>
 
-                <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                <div className={`flex justify-between items-center p-3 bg-slate-50 rounded-lg transition-opacity ${!plant.sodaAshEnabled ? 'opacity-30' : 'opacity-100'}`}>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
                       <i className="fa-solid fa-box"></i>
