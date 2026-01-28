@@ -18,6 +18,13 @@ export interface PlantData {
   clarifierCount: number;
   hlr: number; // Hydraulic Loading Rate m/h
   solidsLoadingRate: number; // Solids Loading Rate kg/m²/h
+  sodaAshEnabled: boolean;
+}
+
+export interface AchievedWaterQuality {
+  calcium: number;
+  magnesium: number;
+  totalHardness: number;
 }
 
 export interface CalculationResults {
@@ -33,6 +40,7 @@ export interface CalculationResults {
   actualSolidsLoading: number; // kg/m²/h
   flowPerHour: number; // m³/h
   governingParameter: 'Hydraulic' | 'Solids';
+  achieved: AchievedWaterQuality;
 }
 
 export interface LogEntry {
