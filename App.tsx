@@ -95,11 +95,27 @@ const App: React.FC = () => {
   const COLORS = ['#2563eb', '#9333ea', '#10b981', '#f59e0b'];
 
   const handleRawChange = (field: keyof RawWaterData, val: string) => {
-    setRaw(prev => ({ ...prev, [field]: parseFloat(val) || 0 }));
+    const numVal = parseFloat(val) || 0;
+    setRaw(prev => {
+      const next = { ...prev, [field]: numVal };
+      // Auto-update total hardness if Ca or Mg changes
+      if (field === 'calcium' || field === 'magnesium') {
+        next.totalHardness = next.calcium + next.magnesium;
+      }
+      return next;
+    });
   };
 
   const handleTargetChange = (field: keyof TargetWaterData, val: string) => {
-    setTarget(prev => ({ ...prev, [field]: parseFloat(val) || 0 }));
+    const numVal = parseFloat(val) || 0;
+    setTarget(prev => {
+      const next = { ...prev, [field]: numVal };
+      // Auto-update total hardness if Ca or Mg changes
+      if (field === 'calcium' || field === 'magnesium') {
+        next.totalHardness = next.calcium + next.magnesium;
+      }
+      return next;
+    });
   };
 
   const handlePlantChange = (field: keyof PlantData, val: string) => {
