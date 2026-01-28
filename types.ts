@@ -1,11 +1,10 @@
-
 export interface RawWaterData {
   ph: number;
   conductivity: number;
-  calcium: number; // as CaCO3
-  magnesium: number; // as CaCO3
-  totalHardness: number; // as CaCO3
-  alkalinity: number; // as CaCO3
+  calcium: number; // as CaCO₃
+  magnesium: number; // as CaCO₃
+  totalHardness: number; // as CaCO₃
+  alkalinity: number; // as CaCO₃
 }
 
 export interface TargetWaterData {
@@ -18,21 +17,21 @@ export interface PlantData {
   dailyFlow: number; // ML/d
   clarifierCount: number;
   hlr: number; // Hydraulic Loading Rate m/h
-  solidsLoadingRate: number; // Solids Loading Rate kg/m2/h
+  solidsLoadingRate: number; // Solids Loading Rate kg/m²/h
 }
 
 export interface CalculationResults {
-  limeDose: number; // mg/L as Ca(OH)2
-  sodaAshDose: number; // mg/L as Na2CO3
+  limeDose: number; // mg/L as Ca(OH)₂
+  sodaAshDose: number; // mg/L as Na₂CO₃
   softeningPh: number;
-  totalLimeDaily: number; // kg/day
-  totalSodaDaily: number; // kg/day
-  totalSludgeDaily: number; // kg/day (dry mass)
-  clarifierArea: number; // m2 per unit
+  totalLimeDaily: number; // kg/d
+  totalSodaDaily: number; // kg/d
+  totalSludgeDaily: number; // kg/d (dry mass)
+  clarifierArea: number; // m² per unit
   clarifierDiameter: number; // m
   actualHLR: number; // m/h
-  actualSolidsLoading: number; // kg/m2/h
-  flowPerHour: number; // m3/h
+  actualSolidsLoading: number; // kg/m²/h
+  flowPerHour: number; // m³/h
   governingParameter: 'Hydraulic' | 'Solids';
 }
 
