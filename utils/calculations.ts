@@ -1,4 +1,3 @@
-
 import { RawWaterData, TargetWaterData, PlantData, CalculationResults } from '../types';
 
 export const calculateSoftening = (
@@ -16,11 +15,11 @@ export const calculateSoftening = (
   const CH = Math.min(raw.totalHardness, raw.alkalinity);
   const NCH = Math.max(0, raw.totalHardness - raw.alkalinity);
 
-  // 2. Lime Dose (Ca(OH)2) Calculation
+  // 2. Lime Dose (Ca(OH)₂) Calculation
   const caToRemove = Math.max(0, raw.calcium - target.calcium);
   const mgToRemove = Math.max(0, raw.magnesium - target.magnesium);
   
-  // Lime as CaCO3 eq
+  // Lime as CaCO₃ eq
   const limeDoseAsCaCO3 = caToRemove + (mgToRemove * 2); 
   const limeDoseMgL = limeDoseAsCaCO3 * (MW_CaOH2 / MW_CaCO3);
 
@@ -36,14 +35,14 @@ export const calculateSoftening = (
 
   // 5. Daily Requirements
   const flowM3Day = plant.dailyFlow * 1000;
-  const totalLimeDaily = (limeDoseMgL * flowM3Day) / 1000; // kg/day
-  const totalSodaDaily = (sodaAshDoseMgL * flowM3Day) / 1000; // kg/day
+  const totalLimeDaily = (limeDoseMgL * flowM3Day) / 1000; // kg/d
+  const totalSodaDaily = (sodaAshDoseMgL * flowM3Day) / 1000; // kg/d
 
   // 6. Sludge Production
   const sludgeCaCO3 = (caToRemove + limeDoseAsCaCO3) * 1.0; 
   const sludgeMgOH2 = mgToRemove * (MW_MgOH2 / MW_CaCO3);
   const totalSludgeMgL = sludgeCaCO3 + sludgeMgOH2;
-  const totalSludgeDaily = (totalSludgeMgL * flowM3Day) / 1000; // kg/day
+  const totalSludgeDaily = (totalSludgeMgL * flowM3Day) / 1000; // kg/d
 
   // 7. Clarifier Design
   const flowPerHour = flowM3Day / 24;
@@ -54,7 +53,7 @@ export const calculateSoftening = (
   // Required Area based on Hydraulics (m/h)
   const areaHydraulic = plant.hlr > 0 ? flowPerUnit / plant.hlr : 0;
   
-  // Required Area based on Solids Loading (kg/m2/h)
+  // Required Area based on Solids Loading (kg/m²/h)
   const areaSolids = plant.solidsLoadingRate > 0 ? solidsPerUnit / plant.solidsLoadingRate : 0;
 
   // Final Design Area (Max of both)
