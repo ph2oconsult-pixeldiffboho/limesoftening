@@ -11,7 +11,7 @@ const App: React.FC = () => {
   // State for raw water
   const [raw, setRaw] = useState<RawWaterData>({
     ph: 7.8,
-    conductivity: 450,
+    conductivity: 45, // 45 mS/m corresponds to 450 μS/cm
     calcium: 180,
     magnesium: 60,
     totalHardness: 240,
@@ -89,13 +89,6 @@ const App: React.FC = () => {
     { name: 'Achieved', Calcium: results.achieved.calcium, Magnesium: results.achieved.magnesium },
   ];
 
-  const chemicalData = [
-    { name: 'Lime (kg/d)', value: results.totalLimeDaily },
-    { name: 'Soda Ash (kg/d)', value: results.totalSodaDaily },
-  ].filter(d => d.value > 0);
-
-  const COLORS = ['#2563eb', '#9333ea', '#10b981', '#f59e0b'];
-
   const handleRawChange = (field: keyof RawWaterData, val: string) => {
     const numVal = parseFloat(val) || 0;
     setRaw(prev => {
@@ -131,7 +124,7 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <i className="fa-solid fa-droplet text-2xl"></i>
-            <h1 className="text-xl font-bold tracking-tight">AquaSoft Pro <span className="font-light text-blue-200 text-sm">v1.1</span></h1>
+            <h1 className="text-xl font-bold tracking-tight">AquaSoft Pro <span className="font-light text-blue-200 text-sm">v1.2</span></h1>
           </div>
           <div className="flex gap-4">
             <button 
@@ -149,7 +142,7 @@ const App: React.FC = () => {
         <header className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
             <h2 className="text-3xl font-bold text-slate-800">Lime Softening Assessment</h2>
-            <p className="text-slate-500 mt-2 text-sm">Stoichiometric dosing and clarifier design utility for water treatment engineers.</p>
+            <p className="text-slate-500 mt-2 text-sm">Stoichiometric dosing and clarifier design utility using SI units.</p>
           </div>
           <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
             <input 
@@ -179,48 +172,48 @@ const App: React.FC = () => {
                 <input type="number" step="0.1" value={raw.ph} onChange={e => handleRawChange('ph', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-tight">Cond. (μS/cm)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Conductivity (mS/m)</label>
                 <input type="number" value={raw.conductivity} onChange={e => handleRawChange('conductivity', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-tight">Ca (mg/L as CaCO₃)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Calcium (mg/L as CaCO₃)</label>
                 <input type="number" value={raw.calcium} onChange={e => handleRawChange('calcium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-tight">Mg (mg/L as CaCO₃)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Magnesium (mg/L as CaCO₃)</label>
                 <input type="number" value={raw.magnesium} onChange={e => handleRawChange('magnesium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-tight">Alk (mg/L as CaCO₃)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Alkalinity (mg/L as CaCO₃)</label>
                 <input type="number" value={raw.alkalinity} onChange={e => handleRawChange('alkalinity', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-tight">Total Hardness</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Total Hardness (mg/L as CaCO₃)</label>
                 <input type="number" value={raw.totalHardness} onChange={e => handleRawChange('totalHardness', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
             </InputSection>
 
             <InputSection title="Target Water Quality" icon="fa-bullseye">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Target Ca (mg/L)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Target Calcium (mg/L)</label>
                 <input type="number" value={target.calcium} onChange={e => handleTargetChange('calcium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Target Mg (mg/L)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Target Magnesium (mg/L)</label>
                 <input type="number" value={target.magnesium} onChange={e => handleTargetChange('magnesium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Target TH (mg/L)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Target Hardness (mg/L)</label>
                 <input type="number" value={target.totalHardness} onChange={e => handleTargetChange('totalHardness', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
             </InputSection>
 
             <InputSection title="Plant Configuration" icon="fa-industry">
               <div className="flex flex-col justify-center bg-blue-50/50 p-4 rounded-xl border border-blue-100 col-span-1 md:col-span-2 lg:col-span-3">
-                <label className="block text-[10px] font-bold text-blue-900 mb-3 uppercase tracking-widest">Soda Ash Control (Non-Carbonate Removal)</label>
+                <label className="block text-[10px] font-bold text-blue-900 mb-3 tracking-widest">Soda ash control (Non-carbonate removal)</label>
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
-                    <span className={`text-[11px] font-bold transition-opacity ${!plant.sodaAshEnabled ? 'text-blue-700 opacity-100' : 'text-slate-400 opacity-50'}`}>LIME ONLY</span>
+                    <span className={`text-[11px] font-bold transition-opacity ${!plant.sodaAshEnabled ? 'text-blue-700 opacity-100' : 'text-slate-400 opacity-50'}`}>Lime only</span>
                   </div>
                   <button 
                     onClick={() => handlePlantChange('sodaAshEnabled', !plant.sodaAshEnabled)}
@@ -231,24 +224,24 @@ const App: React.FC = () => {
                     </div>
                   </button>
                   <div className="flex flex-col items-end text-right">
-                    <span className={`text-[11px] font-bold transition-opacity ${plant.sodaAshEnabled ? 'text-blue-700 opacity-100' : 'text-slate-400 opacity-50'}`}>LIME + SODA ASH</span>
+                    <span className={`text-[11px] font-bold transition-opacity ${plant.sodaAshEnabled ? 'text-blue-700 opacity-100' : 'text-slate-400 opacity-50'}`}>Lime + Soda ash</span>
                   </div>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-tight">Flow (ML/d)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Daily flow (ML/d)</label>
                 <input type="number" value={plant.dailyFlow} onChange={e => handlePlantChange('dailyFlow', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-tight">No. of Units</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Number of units</label>
                 <input type="number" value={plant.clarifierCount} onChange={e => handlePlantChange('clarifierCount', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-tight">Design HLR (m/h)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Design HLR (m/h)</label>
                 <input type="number" step="0.1" value={plant.hlr} onChange={e => handlePlantChange('hlr', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-tight">SLR (kg/m²/h)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Design SLR (kg/m²/h)</label>
                 <input type="number" step="0.1" value={plant.solidsLoadingRate} onChange={e => handlePlantChange('solidsLoadingRate', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
             </InputSection>
@@ -257,12 +250,12 @@ const App: React.FC = () => {
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-semibold text-slate-800 flex items-center gap-2">
                   <i className="fa-solid fa-chart-column text-blue-600"></i>
-                  Softening Performance <span className="text-xs font-normal text-slate-500">(mg/L as CaCO₃)</span>
+                  Softening performance <span className="text-xs font-normal text-slate-500">(mg/L as CaCO₃)</span>
                 </h3>
                 {!targetsMet && (
                   <div className="flex items-center gap-2 text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-100">
                     <i className="fa-solid fa-circle-exclamation text-xs"></i>
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Limits Reached</span>
+                    <span className="text-[10px] font-bold tracking-widest">Hardness limits reached</span>
                   </div>
                 )}
               </div>
@@ -279,8 +272,8 @@ const App: React.FC = () => {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <p className="mt-4 text-[10px] text-slate-500 italic text-center uppercase tracking-wider font-semibold">
-                * Note: Magnesium NCH removal requires soda ash for hardness reduction.
+              <p className="mt-4 text-[10px] text-slate-500 italic text-center tracking-wider font-semibold">
+                * Note: Magnesium non-carbonate hardness removal requires soda ash for hardness reduction.
               </p>
             </div>
 
@@ -292,28 +285,28 @@ const App: React.FC = () => {
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
               <h3 className="text-lg font-bold mb-6 flex items-center gap-2 relative z-10">
                 <i className="fa-solid fa-vial-circle-check text-blue-300"></i>
-                Softening Output
+                Softening output
               </h3>
               <div className="grid grid-cols-2 gap-4 relative z-10">
                 <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20 hover:bg-white/20 transition cursor-default">
-                  <p className="text-blue-200 text-[10px] font-bold mb-1 uppercase tracking-widest">Lime Dose</p>
+                  <p className="text-blue-200 text-[10px] font-bold mb-1 tracking-widest uppercase">Lime dose</p>
                   <p className="text-3xl font-bold">{results.limeDose.toFixed(1)} <span className="text-sm font-normal text-blue-200">mg/L</span></p>
-                  <p className="text-[9px] opacity-70 mt-1 uppercase tracking-tighter">as Ca(OH)₂</p>
+                  <p className="text-[9px] opacity-70 mt-1 tracking-tighter uppercase">as Ca(OH)₂</p>
                 </div>
                 <div className={`bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20 transition-all duration-500 ${!plant.sodaAshEnabled ? 'opacity-30 scale-95 grayscale' : 'opacity-100 hover:bg-white/20'} cursor-default`}>
-                  <p className="text-blue-200 text-[10px] font-bold mb-1 uppercase tracking-widest">Soda Ash</p>
+                  <p className="text-blue-200 text-[10px] font-bold mb-1 tracking-widest uppercase">Soda ash</p>
                   <p className="text-3xl font-bold">{results.sodaAshDose.toFixed(1)} <span className="text-sm font-normal text-blue-200">mg/L</span></p>
-                  <p className="text-[9px] opacity-70 mt-1 uppercase tracking-tighter">as Na₂CO₃</p>
+                  <p className="text-[9px] opacity-70 mt-1 tracking-tighter uppercase">as Na₂CO₃</p>
                 </div>
                 <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20 hover:bg-white/20 transition">
-                  <p className="text-blue-200 text-[10px] font-bold mb-1 uppercase tracking-widest">Softening pH</p>
+                  <p className="text-blue-200 text-[10px] font-bold mb-1 tracking-widest uppercase">Softening pH</p>
                   <p className="text-3xl font-bold">{results.softeningPh.toFixed(1)}</p>
-                  <p className="text-[9px] opacity-70 mt-1 uppercase tracking-tighter font-semibold">{results.softeningPh >= 11 ? 'High pH Softening' : 'Carbonate Stage'}</p>
+                  <p className="text-[9px] opacity-70 mt-1 tracking-tighter font-semibold uppercase">{results.softeningPh >= 11 ? 'High pH stage' : 'Carbonate stage'}</p>
                 </div>
                 <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20 hover:bg-white/20 transition">
-                  <p className="text-blue-200 text-[10px] font-bold mb-1 uppercase tracking-widest">Final TH</p>
+                  <p className="text-blue-200 text-[10px] font-bold mb-1 tracking-widest uppercase">Achieved hardness</p>
                   <p className={`text-3xl font-bold ${!targetsMet ? 'text-amber-300' : 'text-white'}`}>{results.achieved.totalHardness.toFixed(0)} <span className="text-sm font-normal">mg/L</span></p>
-                  <p className="text-[9px] opacity-70 mt-1 uppercase tracking-tighter">{!targetsMet ? 'Restricted Removal' : 'Targets Achieved'}</p>
+                  <p className="text-[9px] opacity-70 mt-1 tracking-tighter uppercase">{!targetsMet ? 'Restricted removal' : 'Targets achieved'}</p>
                 </div>
               </div>
             </div>
@@ -321,7 +314,7 @@ const App: React.FC = () => {
             <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
               <h3 className="font-semibold text-slate-800 mb-6 flex items-center gap-2">
                 <i className="fa-solid fa-box text-blue-600"></i>
-                Daily Requirements
+                Daily chemical requirements
               </h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-4 bg-blue-50/50 rounded-xl border border-blue-100/50">
@@ -330,8 +323,8 @@ const App: React.FC = () => {
                       <i className="fa-solid fa-scale-balanced"></i>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-slate-700">Daily Lime Load</p>
-                      <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Ca(OH)₂ Mass</p>
+                      <p className="text-sm font-bold text-slate-700">Daily lime requirement</p>
+                      <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Ca(OH)₂ mass</p>
                     </div>
                   </div>
                   <p className="text-xl font-black text-slate-900">{results.totalLimeDaily.toLocaleString()} <span className="text-xs font-normal">kg/d</span></p>
@@ -343,8 +336,8 @@ const App: React.FC = () => {
                       <i className="fa-solid fa-cubes"></i>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-slate-700">Daily Soda Ash Load</p>
-                      <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Na₂CO₃ Mass</p>
+                      <p className="text-sm font-bold text-slate-700">Daily soda ash requirement</p>
+                      <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Na₂CO₃ mass</p>
                     </div>
                   </div>
                   <p className="text-xl font-black text-slate-900">{results.totalSodaDaily.toLocaleString()} <span className="text-xs font-normal">kg/d</span></p>
@@ -356,8 +349,8 @@ const App: React.FC = () => {
                       <i className="fa-solid fa-water-ladder"></i>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-amber-800">Dry Sludge Mass</p>
-                      <p className="text-[10px] text-amber-600 font-bold uppercase tracking-widest">Total Solids Produced</p>
+                      <p className="text-sm font-bold text-amber-800">Dry sludge mass</p>
+                      <p className="text-[10px] text-amber-600 font-bold uppercase tracking-widest">Total solids produced</p>
                     </div>
                   </div>
                   <p className="text-xl font-black text-amber-900">{results.totalSludgeDaily.toLocaleString()} <span className="text-xs font-normal">kg/d</span></p>
@@ -369,35 +362,35 @@ const App: React.FC = () => {
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-semibold text-slate-800 flex items-center gap-2">
                   <i className="fa-solid fa-drafting-compass text-blue-600"></i>
-                  Clarifier Engineering
+                  Clarifier engineering
                 </h3>
-                <span className={`text-[10px] font-extrabold px-3 py-1 rounded-lg uppercase tracking-widest ${results.governingParameter === 'Hydraulic' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`}>
-                  {results.governingParameter} Gov.
+                <span className={`text-[10px] font-extrabold px-3 py-1 rounded-lg tracking-widest ${results.governingParameter === 'Hydraulic' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`}>
+                  {results.governingParameter} limited
                 </span>
               </div>
               
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                  <p className="text-slate-400 text-[10px] font-bold mb-1 uppercase tracking-widest text-center">Unit Diameter</p>
+                  <p className="text-slate-400 text-[10px] font-bold mb-1 uppercase tracking-widest text-center">Unit diameter</p>
                   <p className="text-2xl font-black text-blue-600 text-center">{results.clarifierDiameter.toFixed(1)}<span className="text-xs font-normal ml-1">m</span></p>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                  <p className="text-slate-400 text-[10px] font-bold mb-1 uppercase tracking-widest text-center">Unit Area</p>
+                  <p className="text-slate-400 text-[10px] font-bold mb-1 uppercase tracking-widest text-center">Unit area</p>
                   <p className="text-2xl font-black text-blue-600 text-center">{results.clarifierArea.toFixed(1)}<span className="text-xs font-normal ml-1">m²</span></p>
                 </div>
               </div>
               
               <div className="space-y-3 bg-slate-50/50 p-4 rounded-xl">
                 <div className="flex justify-between text-xs py-1">
-                  <span className="text-slate-500 font-bold uppercase">Actual HLR</span>
+                  <span className="text-slate-500 font-bold uppercase tracking-tight">Actual HLR</span>
                   <span className="font-bold text-slate-800">{results.actualHLR.toFixed(2)} m/h</span>
                 </div>
                 <div className="flex justify-between text-xs py-1">
-                  <span className="text-slate-500 font-bold uppercase">Actual Solids Load</span>
+                  <span className="text-slate-500 font-bold uppercase tracking-tight">Actual solids load</span>
                   <span className="font-bold text-slate-800">{results.actualSolidsLoading.toFixed(2)} kg/m²/h</span>
                 </div>
                 <div className="flex justify-between text-xs py-1 border-t border-slate-200 mt-2 pt-2">
-                  <span className="text-slate-500 font-bold uppercase">Flow Per Unit</span>
+                  <span className="text-slate-500 font-bold uppercase tracking-tight">Unit throughput</span>
                   <span className="font-bold text-slate-800">{(results.flowPerHour / plant.clarifierCount).toFixed(0)} m³/h</span>
                 </div>
               </div>
@@ -415,7 +408,7 @@ const App: React.FC = () => {
               <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-blue-50/30">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                   <i className="fa-solid fa-clock-rotate-left text-blue-600"></i>
-                  Scenario History
+                  Scenario history
                 </h2>
                 <button onClick={() => setIsHistoryOpen(false)} className="text-slate-400 hover:text-slate-600 transition p-2">
                   <i className="fa-solid fa-xmark text-xl"></i>
@@ -425,7 +418,7 @@ const App: React.FC = () => {
                 {logs.length === 0 ? (
                   <div className="text-center py-24 opacity-30">
                     <i className="fa-solid fa-database text-5xl mb-4"></i>
-                    <p className="font-bold tracking-widest uppercase text-xs">Empty Log</p>
+                    <p className="font-bold tracking-widest uppercase text-xs">Empty log</p>
                   </div>
                 ) : (
                   logs.map(log => (
@@ -451,7 +444,7 @@ const App: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <i className="fa-solid fa-calculator text-emerald-400"></i>
-                          <span>{log.results.totalLimeDaily.toFixed(0)} kg/d Lime</span>
+                          <span>{log.results.totalLimeDaily.toFixed(0)} kg/d lime</span>
                         </div>
                       </div>
                     </div>
@@ -464,7 +457,7 @@ const App: React.FC = () => {
       )}
 
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3 text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest z-40">
-        AquaSoft Pro | Water Treatment Softening Assessment Tool | All units SI (mg/L, ML/d, m/h)
+        AquaSoft Pro | Water Treatment Engineering Assessment | All units SI (mg/L, mS/m, ML/d, m/h)
       </footer>
     </div>
   );
