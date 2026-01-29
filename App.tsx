@@ -151,7 +151,7 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-white/10 p-2 rounded-lg"><i className="fa-solid fa-droplet"></i></div>
-            <h1 className="text-xl font-bold tracking-tight">AquaSoft Pro <span className="font-light text-blue-200 text-sm opacity-60">v1.8</span></h1>
+            <h1 className="text-xl font-bold tracking-tight">AquaSoft Pro <span className="font-light text-blue-200 text-sm opacity-60">v1.9</span></h1>
           </div>
           <div className="flex gap-4">
             <button onClick={handleRefresh} className="px-4 py-2 bg-blue-800 hover:bg-blue-900 rounded-lg text-sm font-semibold border border-blue-600 transition flex items-center gap-2">
@@ -343,7 +343,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 py-3 text-center text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 py-3 text-center text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] z-40 shadow-[0_-4px_6_px_-1px_rgba(0,0,0,0.05)]">
         AquaSoft Pro | Engineering Assessment Utility | All Units SI
       </footer>
     </div>
