@@ -27,8 +27,6 @@ const DEFAULT_PLANT: PlantData = {
   hlr: 1.5,
   solidsLoadingRate: 5.0,
   sodaAshEnabled: false,
-  limeUnitCost: 0.25,
-  sodaAshUnitCost: 0.65,
 };
 
 const App: React.FC = () => {
@@ -136,9 +134,6 @@ const App: React.FC = () => {
     setPlant(prev => ({ ...prev, [field]: typeof val === 'string' ? parseFloat(val) || 0 : val }));
   };
 
-  const isOptimal = (plant.sodaAshEnabled && results.optimization.cheapestMode === 'LimeSoda') || 
-                    (!plant.sodaAshEnabled && results.optimization.cheapestMode === 'LimeOnly');
-
   const chartData = [
     { name: 'Raw', Ca: raw.calcium, Mg: raw.magnesium },
     { name: 'Target', Ca: target.calcium, Mg: target.magnesium },
@@ -151,7 +146,7 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-white/10 p-2 rounded-lg"><i className="fa-solid fa-droplet"></i></div>
-            <h1 className="text-xl font-bold tracking-tight">AquaSoft Pro <span className="font-light text-blue-200 text-sm opacity-60">v2.0</span></h1>
+            <h1 className="text-xl font-bold tracking-tight">AquaSoft Pro <span className="font-light text-blue-200 text-sm opacity-60">v2.1</span></h1>
           </div>
           <div className="flex gap-4">
             <button onClick={handleRefresh} className="px-4 py-2 bg-blue-800 hover:bg-blue-900 rounded-lg text-sm font-semibold border border-blue-600 transition flex items-center gap-2">
@@ -168,7 +163,7 @@ const App: React.FC = () => {
         <header className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <div>
             <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Softening Assessment</h2>
-            <p className="text-slate-500 mt-1 text-sm font-medium uppercase tracking-widest">Chemical Stoichiometry & Economics</p>
+            <p className="text-slate-500 mt-1 text-sm font-medium uppercase tracking-widest">Stoichiometry & Plant Design</p>
           </div>
           <div className="flex items-center gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm focus-within:ring-2 focus-within:ring-blue-500 transition-all">
             <input type="text" placeholder="Scenario name..." value={logLabel} onChange={(e) => setLogLabel(e.target.value)} className="px-4 py-2 text-sm border-none focus:ring-0 outline-none w-48 font-medium" />
@@ -192,35 +187,24 @@ const App: React.FC = () => {
               <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Target Mg</label><input type="number" value={target.magnesium} onChange={e => handleTargetChange('magnesium', e.target.value)} className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
               <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex items-center gap-3">
                 <i className="fa-solid fa-circle-info text-blue-500"></i>
-                <p className="text-[10px] text-blue-800 leading-tight">These targets drive the dosage calculations and the cost optimization model.</p>
+                <p className="text-[10px] text-blue-800 leading-tight">Define your required effluent hardness to calculate chemical dosages.</p>
               </div>
             </InputSection>
 
-            <InputSection title="Chemical Unit Costs" icon="fa-dollar-sign">
-              <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Lime ($/kg)</label><input type="number" step="0.01" value={plant.limeUnitCost} onChange={e => handlePlantChange('limeUnitCost', e.target.value)} className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
-              <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Soda Ash ($/kg)</label><input type="number" step="0.01" value={plant.sodaAshUnitCost} onChange={e => handlePlantChange('sodaAshUnitCost', e.target.value)} className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
-            </InputSection>
-
-            <div className={`p-6 rounded-2xl border-2 transition-all shadow-sm ${isOptimal ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className={`font-bold text-sm flex items-center gap-2 ${isOptimal ? 'text-emerald-800' : 'text-amber-800'}`}>
-                  <i className="fa-solid fa-chart-line"></i> Economic Optimization
-                </h3>
-                {isOptimal && <span className="text-[9px] font-black bg-emerald-200 text-emerald-800 px-2 py-1 rounded-full uppercase tracking-widest">Optimal</span>}
-              </div>
-              <p className="text-xs text-slate-700 leading-relaxed mb-4">
-                Based on current unit costs, the most economical treatment is <strong>{results.optimization.cheapestMode === 'LimeOnly' ? 'Lime Only' : 'Lime + Soda Ash'}</strong>.
-              </p>
-              {!isOptimal && (
-                <div className="bg-white p-4 rounded-xl border border-amber-200 flex flex-col gap-1">
-                  <p className="text-[11px] text-amber-900 font-bold">Estimated Potential Savings:</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-amber-600">${results.optimization.potentialSavings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                    <span className="text-xs text-amber-700 font-medium">per day</span>
-                  </div>
+            <InputSection title="Plant Design & Hydraulics" icon="fa-industry">
+              <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase block text-blue-800">Use Soda Ash?</span>
+                  <p className="text-[9px] text-blue-500">Enable for Non-Carbonate removal</p>
                 </div>
-              )}
-            </div>
+                <button onClick={() => handlePlantChange('sodaAshEnabled', !plant.sodaAshEnabled)} className={`relative w-12 h-6 rounded-full transition-all shadow-inner ${plant.sodaAshEnabled ? 'bg-blue-600' : 'bg-slate-300'}`}>
+                  <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${plant.sodaAshEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                </button>
+              </div>
+              <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Flow (ML/d)</label><input type="number" value={plant.dailyFlow} onChange={e => handlePlantChange('dailyFlow', e.target.value)} className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
+              <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Units (#)</label><input type="number" value={plant.clarifierCount} onChange={e => handlePlantChange('clarifierCount', e.target.value)} className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
+              <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Design HLR (m/h)</label><input type="number" step="0.1" value={plant.hlr} onChange={e => handlePlantChange('hlr', e.target.value)} className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
+            </InputSection>
           </div>
 
           <div className="lg:col-span-5 space-y-8">
@@ -239,17 +223,17 @@ const App: React.FC = () => {
                   <p className="text-[9px] text-slate-500 uppercase mt-1">as Na₂CO₃</p>
                 </div>
                 <div>
-                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Process pH</p>
-                  <p className="text-3xl font-bold">{results.softeningPh.toFixed(1)}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                     <span className={`w-2 h-2 rounded-full ${results.softeningPh >= 11 ? 'bg-purple-500' : 'bg-emerald-500'}`}></span>
-                     <p className="text-[9px] text-slate-500 uppercase font-bold">{results.softeningPh >= 11 ? 'Mg Stage' : 'Ca Stage'}</p>
-                  </div>
+                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Daily Lime</p>
+                  <p className="text-3xl font-bold text-blue-400">{results.totalLimeDaily.toFixed(0)} <span className="text-xs font-medium text-blue-300">kg/d</span></p>
                 </div>
                 <div>
-                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Daily Cost</p>
-                  <p className="text-3xl font-bold text-blue-400">${results.totalDailyCost.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
-                  <p className="text-[9px] text-slate-500 uppercase mt-1">Estimated USD</p>
+                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Daily Sludge</p>
+                  <p className="text-3xl font-bold text-amber-400">{results.totalSludgeDaily.toFixed(0)} <span className="text-xs font-medium text-amber-300">kg/d</span></p>
+                  <p className="text-[9px] text-slate-500 uppercase mt-1">dry mass</p>
+                </div>
+                <div>
+                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Process pH</p>
+                  <p className="text-3xl font-bold">{results.softeningPh.toFixed(1)}</p>
                 </div>
               </div>
             </div>
@@ -294,23 +278,6 @@ const App: React.FC = () => {
             </div>
           </div>
         </div>
-
-        <div className="mt-8">
-          <InputSection title="Plant Design & Hydraulics" icon="fa-industry">
-            <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-bold uppercase block text-blue-800">Add Soda Ash?</span>
-                <p className="text-[9px] text-blue-500">Enable for Non-Carbonate removal</p>
-              </div>
-              <button onClick={() => handlePlantChange('sodaAshEnabled', !plant.sodaAshEnabled)} className={`relative w-12 h-6 rounded-full transition-all shadow-inner ${plant.sodaAshEnabled ? 'bg-blue-600' : 'bg-slate-300'}`}>
-                <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${plant.sodaAshEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
-              </button>
-            </div>
-            <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Flow (ML/d)</label><input type="number" value={plant.dailyFlow} onChange={e => handlePlantChange('dailyFlow', e.target.value)} className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
-            <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Units (#)</label><input type="number" value={plant.clarifierCount} onChange={e => handlePlantChange('clarifierCount', e.target.value)} className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
-            <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Design HLR (m/h)</label><input type="number" step="0.1" value={plant.hlr} onChange={e => handlePlantChange('hlr', e.target.value)} className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
-          </InputSection>
-        </div>
       </main>
 
       {isHistoryOpen && (
@@ -334,7 +301,7 @@ const App: React.FC = () => {
                   <h4 className="font-bold text-slate-800 text-lg mb-2">{log.label}</h4>
                   <div className="flex gap-4 text-xs font-medium text-slate-500">
                     <span className="flex items-center gap-1"><i className="fa-solid fa-water"></i> {log.plant.dailyFlow} ML/d</span>
-                    <span className="flex items-center gap-1"><i className="fa-solid fa-dollar-sign text-emerald-500"></i> {log.results.totalDailyCost.toFixed(0)}/d</span>
+                    <span className="flex items-center gap-1"><i className="fa-solid fa-flask"></i> {log.results.limeDose.toFixed(1)} mg/L</span>
                   </div>
                 </div>
               ))}
