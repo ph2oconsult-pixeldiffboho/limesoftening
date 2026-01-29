@@ -1,3 +1,4 @@
+
 import { RawWaterData, TargetWaterData, PlantData, CalculationResults } from '../types';
 
 export const calculateSoftening = (
@@ -16,14 +17,6 @@ export const calculateSoftening = (
   const caToRemoveTarget = Math.max(0, raw.calcium - target.calcium);
   const mgToRemoveTarget = Math.max(0, raw.magnesium - target.magnesium);
 
-  /**
-   * STOICHIOMETRIC PRIORITY (Standard Engineering Practice):
-   * 1. Ca-CH: Removed at pH ~9.5-10.3 (Uses 1 mole Lime)
-   * 2. Mg-CH: Removed at pH ~11.0+ (Uses 2 moles Lime)
-   * 3. Mg-NCH: Removed at pH ~11.0+ (Uses 1 mole Lime + 1 mole Soda Ash)
-   * 4. Ca-NCH: Removed at pH ~9.5+ (Uses 1 mole Soda Ash)
-   */
-
   let alkRem = raw.alkalinity;
 
   // Step 1: Calcium Carbonate Hardness (Ca-CH)
@@ -40,13 +33,6 @@ export const calculateSoftening = (
   // Step 4: Calcium Non-Carbonate Hardness (Ca-NCH)
   const caNCHToRemove = Math.max(0, caToRemoveTarget - caCHToRemove);
 
-  /**
-   * Softening Mode Constraints:
-   * If Soda Ash is disabled, we cannot remove Non-Carbonate Hardness (NCH).
-   * Removing Mg-NCH with lime alone simply replaces Mg hardness with Ca hardness.
-   * To satisfy the user's requirement for Mg softening response:
-   * We treat Mg softening (hardness reduction) as strictly dependent on Soda Ash for the NCH portion.
-   */
   const actualMgNCHRemoved = plant.sodaAshEnabled ? mgNCHToRemove : 0;
   const actualCaNCHRemoved = plant.sodaAshEnabled ? caNCHToRemove : 0;
 
@@ -54,12 +40,10 @@ export const calculateSoftening = (
   const finalCaRemoved = caCHToRemove + actualCaNCHRemoved;
   const finalMgRemoved = mgCHToRemove + actualMgNCHRemoved;
 
-  // 2. Chemical Dosages (all conversions from CaCO₃ equivalents)
-  // Lime Dose (as CaCO₃ eq): 1 per Ca-CH + 2 per Mg-CH + 1 per Mg-NCH
+  // 2. Chemical Dosages
   const limeDoseAsCaCO3 = caCHToRemove + (2 * mgCHToRemove) + actualMgNCHRemoved;
   const limeDoseMgL = limeDoseAsCaCO3 * (MW_CaOH2 / MW_CaCO3);
 
-  // Soda Ash Dose (as CaCO₃ eq): 1 per Mg-NCH + 1 per Ca-NCH
   const sodaAshDoseAsCaCO3 = actualMgNCHRemoved + actualCaNCHRemoved;
   const sodaAshDoseMgL = sodaAshDoseAsCaCO3 * (MW_Na2CO3 / MW_CaCO3);
 
@@ -69,23 +53,26 @@ export const calculateSoftening = (
   const achievedTotal = achievedCa + achievedMg;
 
   // Softening pH Estimation
-  // Mg removal requires significant hydroxide excess (pH > 11.0)
-  let softeningPh = 10.3;
-  if (finalMgRemoved > 5) softeningPh = 10.8;
-  if (finalMgRemoved > 15) softeningPh = 11.2;
-  if (finalMgRemoved > 30) softeningPh = 11.4;
+  let softeningPh = 9.8;
+  if (finalMgRemoved > 5) softeningPh = 10.5;
+  if (finalMgRemoved > 15) softeningPh = 11.0;
+  if (finalMgRemoved > 30) softeningPh = 11.3;
 
   // 3. Daily Mass Requirements (1 mg/L * 1 ML/d = 1 kg/d)
   const totalLimeDaily = limeDoseMgL * plant.dailyFlow; 
   const totalSodaDaily = sodaAshDoseMgL * plant.dailyFlow;
 
-  // 4. Sludge Production (Dry Mass kg/d)
-  // Sludge includes precipitated CaCO3 (from hardness and lime) and Mg(OH)2
+  // 4. Costs
+  const dailyCostLime = totalLimeDaily * plant.limeUnitCost;
+  const dailyCostSoda = totalSodaDaily * plant.sodaAshUnitCost;
+  const totalDailyCost = dailyCostLime + dailyCostSoda;
+
+  // 5. Sludge Production (Dry Mass kg/d)
   const sludgeCaCO3 = (finalCaRemoved + limeDoseAsCaCO3); 
   const sludgeMgOH2 = finalMgRemoved * MG_TO_CA_RATIO;
   const totalSludgeDaily = (sludgeCaCO3 + sludgeMgOH2) * plant.dailyFlow;
 
-  // 5. Clarifier Design
+  // 6. Clarifier Design
   const flowPerHour = (plant.dailyFlow * 1000) / 24; // m³/h
   const flowPerUnit = flowPerHour / plant.clarifierCount;
   const solidsPerHour = totalSludgeDaily / 24; // kg/h
@@ -107,6 +94,9 @@ export const calculateSoftening = (
     totalLimeDaily,
     totalSodaDaily,
     totalSludgeDaily,
+    dailyCostLime,
+    dailyCostSoda,
+    totalDailyCost,
     clarifierArea,
     clarifierDiameter,
     actualHLR,
