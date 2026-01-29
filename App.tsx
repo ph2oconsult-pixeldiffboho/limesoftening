@@ -27,8 +27,8 @@ const DEFAULT_PLANT: PlantData = {
   hlr: 1.5,
   solidsLoadingRate: 5.0,
   sodaAshEnabled: false,
-  limeUnitCost: 0.25, // $0.25/kg
-  sodaAshUnitCost: 0.65, // $0.65/kg
+  limeUnitCost: 0.25,
+  sodaAshUnitCost: 0.65,
 };
 
 const App: React.FC = () => {
@@ -39,27 +39,44 @@ const App: React.FC = () => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [logLabel, setLogLabel] = useState("");
 
-  // Load logs on mount
   useEffect(() => {
     try {
       const savedLogs = localStorage.getItem('aquasoft_logs');
       if (savedLogs) setLogs(JSON.parse(savedLogs));
     } catch (e) {
-      console.error("Failed to load history", e);
+      console.warn("Could not load history", e);
     }
   }, []);
 
-  // Sync logs to localStorage
   useEffect(() => {
     localStorage.setItem('aquasoft_logs', JSON.stringify(logs));
   }, [logs]);
 
-  // Calculations
-  const results = useMemo(() => calculateSoftening(raw, target, plant), [raw, target, plant]);
+  const results = useMemo(() => {
+    try {
+      return calculateSoftening(raw, target, plant);
+    } catch (e) {
+      console.error("Calculation logic failed", e);
+      return null;
+    }
+  }, [raw, target, plant]);
+
+  if (!results) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center p-8 bg-white shadow-xl rounded-2xl border border-slate-200">
+          <i className="fa-solid fa-triangle-exclamation text-4xl text-amber-500 mb-4"></i>
+          <h2 className="text-xl font-bold text-slate-800">Calculation Engine Offline</h2>
+          <p className="text-slate-500 mt-2">Please check your water quality inputs for valid numerical values.</p>
+        </div>
+      </div>
+    );
+  }
 
   const saveCurrentLog = () => {
+    const id = Math.random().toString(36).substring(2, 11);
     const newLog: LogEntry = {
-      id: crypto.randomUUID(),
+      id,
       timestamp: new Date().toISOString(),
       label: logLabel || `Scenario ${new Date().toLocaleTimeString()}`,
       raw: { ...raw },
@@ -69,11 +86,11 @@ const App: React.FC = () => {
     };
     setLogs([newLog, ...logs]);
     setLogLabel("");
-    alert("Scenario saved to history!");
+    alert("Scenario archived in local history.");
   };
 
   const handleRefresh = () => {
-    if (window.confirm("Reset all inputs to engineering defaults?")) {
+    if (confirm("Reset to engineering defaults?")) {
       setRaw(DEFAULT_RAW);
       setTarget(DEFAULT_TARGET);
       setPlant(DEFAULT_PLANT);
@@ -94,9 +111,9 @@ const App: React.FC = () => {
   };
 
   const handleRawChange = (field: keyof RawWaterData, val: string) => {
-    const numVal = parseFloat(val) || 0;
+    const num = parseFloat(val) || 0;
     setRaw(prev => {
-      const next = { ...prev, [field]: numVal };
+      const next = { ...prev, [field]: num };
       if (field === 'calcium' || field === 'magnesium') {
         next.totalHardness = next.calcium + next.magnesium;
       }
@@ -105,9 +122,9 @@ const App: React.FC = () => {
   };
 
   const handleTargetChange = (field: keyof TargetWaterData, val: string) => {
-    const numVal = parseFloat(val) || 0;
+    const num = parseFloat(val) || 0;
     setTarget(prev => {
-      const next = { ...prev, [field]: numVal };
+      const next = { ...prev, [field]: num };
       if (field === 'calcium' || field === 'magnesium') {
         next.totalHardness = next.calcium + next.magnesium;
       }
@@ -119,311 +136,221 @@ const App: React.FC = () => {
     setPlant(prev => ({ ...prev, [field]: typeof val === 'string' ? parseFloat(val) || 0 : val }));
   };
 
-  const targetsMet = (results.achieved.calcium <= target.calcium + 1.1) && 
-                    (results.achieved.magnesium <= target.magnesium + 1.1);
+  const isOptimal = (plant.sodaAshEnabled && results.optimization.cheapestMode === 'LimeSoda') || 
+                    (!plant.sodaAshEnabled && results.optimization.cheapestMode === 'LimeOnly');
 
-  const hardnessChartData = [
-    { name: 'Raw Water', Calcium: raw.calcium, Magnesium: raw.magnesium },
-    { name: 'Target', Calcium: target.calcium, Magnesium: target.magnesium },
-    { name: 'Achieved', Calcium: results.achieved.calcium, Magnesium: results.achieved.magnesium },
+  const chartData = [
+    { name: 'Raw', Ca: raw.calcium, Mg: raw.magnesium },
+    { name: 'Target', Ca: target.calcium, Mg: target.magnesium },
+    { name: 'Final', Ca: results.achieved.calcium, Mg: results.achieved.magnesium },
   ];
 
-  const isCurrentModeOptimal = (plant.sodaAshEnabled && results.optimization.cheapestMode === 'LimeSoda') || 
-                               (!plant.sodaAshEnabled && results.optimization.cheapestMode === 'LimeOnly');
-
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 selection:bg-blue-100">
       <nav className="bg-blue-700 text-white shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <i className="fa-solid fa-droplet text-2xl"></i>
-            <h1 className="text-xl font-bold tracking-tight">AquaSoft Pro <span className="font-light text-blue-200 text-sm">v1.5</span></h1>
+          <div className="flex items-center gap-3">
+            <div className="bg-white/10 p-2 rounded-lg"><i className="fa-solid fa-droplet"></i></div>
+            <h1 className="text-xl font-bold tracking-tight">AquaSoft Pro <span className="font-light text-blue-200 text-sm opacity-60">v1.7</span></h1>
           </div>
           <div className="flex gap-4">
-            <button onClick={handleRefresh} className="flex items-center gap-2 px-4 py-2 bg-blue-800 hover:bg-blue-900 rounded-lg transition text-sm font-medium border border-blue-600">
-              <i className="fa-solid fa-rotate-right"></i> Refresh
+            <button onClick={handleRefresh} className="px-4 py-2 bg-blue-800 hover:bg-blue-900 rounded-lg text-sm font-semibold border border-blue-600 transition flex items-center gap-2">
+              <i className="fa-solid fa-rotate"></i> Reset
             </button>
-            <button onClick={() => setIsHistoryOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-800 hover:bg-blue-900 rounded-lg transition text-sm font-medium border border-blue-600">
-              <i className="fa-solid fa-clock-rotate-left"></i> History ({logs.length})
+            <button onClick={() => setIsHistoryOpen(true)} className="px-4 py-2 bg-blue-800 hover:bg-blue-900 rounded-lg text-sm font-semibold border border-blue-600 transition flex items-center gap-2">
+              <i className="fa-solid fa-database"></i> History ({logs.length})
             </button>
           </div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <header className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <header className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <div>
-            <h2 className="text-3xl font-bold text-slate-800">Lime Softening Assessment</h2>
-            <p className="text-slate-500 mt-2 text-sm uppercase tracking-wider font-semibold">Stoichiometric chemical dosing & clarifier design</p>
+            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Softening Assessment</h2>
+            <p className="text-slate-500 mt-1 text-sm font-medium uppercase tracking-widest">Chemical Stoichiometry & Economics</p>
           </div>
-          <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
-            <input type="text" placeholder="Scenario name..." value={logLabel} onChange={(e) => setLogLabel(e.target.value)} className="px-3 py-2 text-sm border-none focus:ring-0 outline-none w-48" />
-            <button onClick={saveCurrentLog} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">
-              <i className="fa-solid fa-floppy-disk"></i> Save Log
+          <div className="flex items-center gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm focus-within:ring-2 focus-within:ring-blue-500 transition-all">
+            <input type="text" placeholder="Scenario name..." value={logLabel} onChange={(e) => setLogLabel(e.target.value)} className="px-4 py-2 text-sm border-none focus:ring-0 outline-none w-48 font-medium" />
+            <button onClick={saveCurrentLog} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-200 transition active:scale-95 flex items-center gap-2">
+              <i className="fa-solid fa-cloud-arrow-up"></i> Save
             </button>
           </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-7 space-y-6">
-            
+          {/* LEFT COLUMN: INPUTS */}
+          <div className="lg:col-span-7 space-y-8">
             <InputSection title="Raw Water Quality" icon="fa-flask-vial">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">pH</label>
-                <input type="number" step="0.1" value={raw.ph} onChange={e => handleRawChange('ph', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Conductivity (μS/cm)</label>
-                <input type="number" value={raw.conductivity} onChange={e => handleRawChange('conductivity', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Calcium (mg/L as CaCO₃)</label>
-                <input type="number" value={raw.calcium} onChange={e => handleRawChange('calcium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Magnesium (mg/L as CaCO₃)</label>
-                <input type="number" value={raw.magnesium} onChange={e => handleRawChange('magnesium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Alkalinity (mg/L as CaCO₃)</label>
-                <input type="number" value={raw.alkalinity} onChange={e => handleRawChange('alkalinity', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Total Hardness (mg/L)</label>
-                <input type="number" value={raw.totalHardness} onChange={e => handleRawChange('totalHardness', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
+              <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">pH Units</label><input type="number" step="0.1" value={raw.ph} onChange={e => handleRawChange('ph', e.target.value)} className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
+              <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Ca (mg/L CaCO₃)</label><input type="number" value={raw.calcium} onChange={e => handleRawChange('calcium', e.target.value)} className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
+              <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Mg (mg/L CaCO₃)</label><input type="number" value={raw.magnesium} onChange={e => handleRawChange('magnesium', e.target.value)} className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
+              <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Alk (mg/L CaCO₃)</label><input type="number" value={raw.alkalinity} onChange={e => handleRawChange('alkalinity', e.target.value)} className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
             </InputSection>
 
             <InputSection title="Target Water Quality" icon="fa-bullseye">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Target Calcium</label>
-                <input type="number" value={target.calcium} onChange={e => handleTargetChange('calcium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Target Magnesium</label>
-                <input type="number" value={target.magnesium} onChange={e => handleTargetChange('magnesium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Target Hardness</label>
-                <input type="number" value={target.totalHardness} onChange={e => handleTargetChange('totalHardness', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-            </InputSection>
-
-            <InputSection title="Chemical Economics" icon="fa-coins">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Lime Cost ($/kg)</label>
-                <input type="number" step="0.01" value={plant.limeUnitCost} onChange={e => handlePlantChange('limeUnitCost', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Soda Ash Cost ($/kg)</label>
-                <input type="number" step="0.01" value={plant.sodaAshUnitCost} onChange={e => handlePlantChange('sodaAshUnitCost', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              <div className="flex items-center gap-3 bg-blue-50 p-3 rounded-lg border border-blue-100 h-fit self-end col-span-1 lg:col-span-1">
+              <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Target Ca</label><input type="number" value={target.calcium} onChange={e => handleTargetChange('calcium', e.target.value)} className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
+              <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Target Mg</label><input type="number" value={target.magnesium} onChange={e => handleTargetChange('magnesium', e.target.value)} className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
+              <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex items-center gap-3">
                 <i className="fa-solid fa-circle-info text-blue-500"></i>
-                <p className="text-[10px] text-blue-700 leading-tight">Unit costs are used to determine the most economical treatment pathway.</p>
+                <p className="text-[10px] text-blue-800 leading-tight">These targets drive the dosage calculations and the cost optimization model.</p>
               </div>
             </InputSection>
 
-            <div className="bg-amber-50 rounded-xl border border-amber-200 p-6 shadow-sm">
-              <h3 className="text-amber-800 font-bold text-sm mb-3 flex items-center gap-2">
-                <i className="fa-solid fa-lightbulb"></i>
-                Softening Engineering Insights
-              </h3>
-              <div className="space-y-3 text-xs text-amber-900 leading-relaxed">
-                <p>
-                  <strong>pH Threshold:</strong> Efficient Magnesium precipitation requires <strong>pH 11.0 - 11.4</strong>. Without reaching this "Mg-stage" pH, residual Magnesium will remain high regardless of stoichiometric doses.
-                </p>
-                {!plant.sodaAshEnabled && raw.magnesium > raw.alkalinity && (
-                  <div className="p-3 bg-amber-100/50 rounded-lg border border-amber-200">
-                    <strong>Constraint Alert:</strong> Your current water has Magnesium Non-Carbonate Hardness. In <span className="font-bold">Lime Only</span> mode, total hardness reduction is capped by raw alkalinity. <span className="font-bold">Soda Ash is required</span> to drop hardness further.
-                  </div>
-                )}
+            <InputSection title="Chemical Unit Costs" icon="fa-dollar-sign">
+              <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Lime ($/kg)</label><input type="number" step="0.01" value={plant.limeUnitCost} onChange={e => handlePlantChange('limeUnitCost', e.target.value)} className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
+              <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Soda Ash ($/kg)</label><input type="number" step="0.01" value={plant.sodaAshUnitCost} onChange={e => handlePlantChange('sodaAshUnitCost', e.target.value)} className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
+            </InputSection>
+
+            {/* Optimization Tool */}
+            <div className={`p-6 rounded-2xl border-2 transition-all shadow-sm ${isOptimal ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className={`font-bold text-sm flex items-center gap-2 ${isOptimal ? 'text-emerald-800' : 'text-amber-800'}`}>
+                  <i className="fa-solid fa-chart-line"></i> Economic Optimization
+                </h3>
+                {isOptimal && <span className="text-[9px] font-black bg-emerald-200 text-emerald-800 px-2 py-1 rounded-full uppercase tracking-widest">Optimal</span>}
               </div>
+              <p className="text-xs text-slate-700 leading-relaxed mb-4">
+                Based on current unit costs, the most economical treatment is <strong>{results.optimization.cheapestMode === 'LimeOnly' ? 'Lime Only' : 'Lime + Soda Ash'}</strong>.
+              </p>
+              {!isOptimal && (
+                <div className="bg-white p-4 rounded-xl border border-amber-200 flex flex-col gap-1">
+                  <p className="text-[11px] text-amber-900 font-bold">Estimated Potential Savings:</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-amber-600">${results.optimization.potentialSavings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <span className="text-xs text-amber-700 font-medium">per day</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="lg:col-span-5 space-y-6">
-            
-            {/* Optimization Recommendation Panel */}
-            <div className={`rounded-xl border-2 p-6 shadow-md transition-all ${
-              isCurrentModeOptimal ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'
-            }`}>
-              <div className="flex justify-between items-start mb-4">
-                <h3 className={`font-bold text-sm flex items-center gap-2 ${
-                  isCurrentModeOptimal ? 'text-emerald-800' : 'text-amber-800'
-                }`}>
-                  <i className="fa-solid fa-wand-magic-sparkles"></i>
-                  Treatment Pathway Optimization
-                </h3>
-              </div>
-              <div className="space-y-3">
-                <p className="text-xs font-medium leading-relaxed">
-                  Best economic mode: <strong>{results.optimization.cheapestMode === 'LimeOnly' ? 'LIME ONLY' : 'LIME + SODA ASH'}</strong>.
-                </p>
-                {!isCurrentModeOptimal ? (
-                  <div className="bg-white/50 p-3 rounded-lg border border-amber-200 flex flex-col gap-1">
-                    <p className="text-[11px] text-amber-900">
-                      Potential daily savings if mode is switched:
-                    </p>
-                    <p className="text-lg font-black text-amber-600">${results.optimization.potentialSavings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-emerald-700">
-                    <i className="fa-solid fa-circle-check"></i>
-                    <span className="text-[11px] font-bold uppercase tracking-widest">Optimal chemical configuration</span>
-                  </div>
-                )}
-                {!results.optimization.meetsTarget && (
-                  <p className="text-[10px] text-red-600 font-bold bg-red-50 p-2 rounded border border-red-100 flex items-center gap-2">
-                    <i className="fa-solid fa-triangle-exclamation"></i>
-                    Hardness targets not fully achievable in current mode.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className={`bg-gradient-to-br transition-all duration-700 ${plant.sodaAshEnabled ? 'from-blue-700 to-blue-900' : 'from-indigo-800 to-slate-900'} text-white rounded-2xl p-6 shadow-2xl relative overflow-hidden`}>
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
-              <h3 className="text-lg font-bold mb-6 flex items-center gap-2 relative z-10">
-                <i className="fa-solid fa-vial-circle-check text-blue-300"></i> Calculated Doses
-              </h3>
-              <div className="grid grid-cols-2 gap-4 relative z-10">
-                <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20">
-                  <p className="text-blue-200 text-[10px] font-bold mb-1 uppercase tracking-widest">Lime Dose</p>
-                  <p className="text-3xl font-bold">{results.limeDose.toFixed(1)} <span className="text-sm font-normal text-blue-200">mg/L</span></p>
-                  <p className="text-[9px] opacity-70 mt-1 uppercase">as Ca(OH)₂</p>
+          {/* RIGHT COLUMN: RESULTS */}
+          <div className="lg:col-span-5 space-y-8">
+            <div className="bg-slate-900 text-white rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+              <h3 className="text-lg font-bold mb-8 flex items-center gap-3"><i className="fa-solid fa-microscope text-blue-400"></i> Softening Performance</h3>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-10">
+                <div>
+                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Lime Dose</p>
+                  <p className="text-3xl font-bold">{results.limeDose.toFixed(1)} <span className="text-xs font-medium text-slate-500">mg/L</span></p>
+                  <p className="text-[9px] text-slate-500 uppercase mt-1">as Ca(OH)₂</p>
                 </div>
-                <div className={`bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20 transition-all ${!plant.sodaAshEnabled ? 'opacity-30 grayscale' : 'opacity-100'}`}>
-                  <p className="text-blue-200 text-[10px] font-bold mb-1 uppercase tracking-widest">Soda Ash</p>
-                  <p className="text-3xl font-bold">{results.sodaAshDose.toFixed(1)} <span className="text-sm font-normal text-blue-200">mg/L</span></p>
-                  <p className="text-[9px] opacity-70 mt-1 uppercase">as Na₂CO₃</p>
+                <div>
+                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Soda Ash</p>
+                  <p className="text-3xl font-bold">{results.sodaAshDose.toFixed(1)} <span className="text-xs font-medium text-slate-500">mg/L</span></p>
+                  <p className="text-[9px] text-slate-500 uppercase mt-1">as Na₂CO₃</p>
                 </div>
-                <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20">
-                  <p className="text-blue-200 text-[10px] font-bold mb-1 uppercase tracking-widest">Process pH</p>
+                <div>
+                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Process pH</p>
                   <p className="text-3xl font-bold">{results.softeningPh.toFixed(1)}</p>
-                  <p className="text-[9px] opacity-70 mt-1 uppercase font-semibold">{results.softeningPh >= 11 ? 'Mg Stage' : 'Ca Stage'}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                     <span className={`w-2 h-2 rounded-full ${results.softeningPh >= 11 ? 'bg-purple-500' : 'bg-emerald-500'}`}></span>
+                     <p className="text-[9px] text-slate-500 uppercase font-bold">{results.softeningPh >= 11 ? 'Mg Stage' : 'Ca Stage'}</p>
+                  </div>
                 </div>
-                <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20">
-                  <p className="text-blue-200 text-[10px] font-bold mb-1 uppercase tracking-widest">Daily Cost</p>
-                  <p className="text-3xl font-bold">${results.totalDailyCost.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p>
-                  <p className="text-[9px] opacity-70 mt-1 uppercase tracking-tighter">Approx USD per day</p>
+                <div>
+                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Daily Cost</p>
+                  <p className="text-3xl font-bold text-blue-400">${results.totalDailyCost.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
+                  <p className="text-[9px] text-slate-500 uppercase mt-1">Estimated USD</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-              <h3 className="font-semibold text-slate-800 mb-6 flex items-center gap-2 uppercase text-xs tracking-widest">Daily Logistics</h3>
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Clarifier Design Check</h3>
               <div className="space-y-4">
-                <div className="flex justify-between items-center p-4 bg-blue-50/50 rounded-xl border border-blue-100/50">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-sm"><i className="fa-solid fa-scale-balanced"></i></div>
-                    <div><p className="text-sm font-bold text-slate-700">Total Lime</p><p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight">Kg/day required</p></div>
-                  </div>
-                  <p className="text-xl font-black text-slate-900">{results.totalLimeDaily.toLocaleString()} <span className="text-xs font-normal">kg</span></p>
+                <div className="flex justify-between items-center py-3 border-b border-slate-50">
+                  <span className="text-sm font-medium text-slate-600">Total Surface Area</span>
+                  <span className="text-sm font-bold">{(results.clarifierArea * plant.clarifierCount).toFixed(1)} m²</span>
                 </div>
-                <div className={`flex justify-between items-center p-4 bg-purple-50/50 rounded-xl border border-purple-100/50 ${!plant.sodaAshEnabled ? 'opacity-20 grayscale' : ''}`}>
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 shadow-sm"><i className="fa-solid fa-cubes"></i></div>
-                    <div><p className="text-sm font-bold text-slate-700">Total Soda Ash</p><p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight">Kg/day required</p></div>
-                  </div>
-                  <p className="text-xl font-black text-slate-900">{results.totalSodaDaily.toLocaleString()} <span className="text-xs font-normal">kg</span></p>
+                <div className="flex justify-between items-center py-3 border-b border-slate-50">
+                  <span className="text-sm font-medium text-slate-600">Unit Diameter</span>
+                  <span className="text-sm font-bold">{results.clarifierDiameter.toFixed(1)} m</span>
                 </div>
-                <div className="flex justify-between items-center p-4 bg-amber-50 rounded-xl border border-amber-200">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shadow-sm"><i className="fa-solid fa-water-ladder"></i></div>
-                    <div><p className="text-sm font-bold text-amber-800">Dry Sludge</p><p className="text-[10px] text-amber-600 font-bold uppercase tracking-tight">Kg/day solids</p></div>
-                  </div>
-                  <p className="text-xl font-black text-amber-900">{results.totalSludgeDaily.toLocaleString()} <span className="text-xs font-normal">kg</span></p>
+                <div className="flex justify-between items-center py-3 border-b border-slate-50">
+                  <span className="text-sm font-medium text-slate-600">Actual HLR</span>
+                  <span className="text-sm font-bold text-blue-600">{results.actualHLR.toFixed(2)} m/h</span>
+                </div>
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-sm font-medium text-slate-600">Governing Load</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${results.governingParameter === 'Hydraulic' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{results.governingParameter}</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-              <h3 className="font-semibold text-slate-800 mb-6 flex items-center gap-2 uppercase text-xs tracking-widest">Hardness Balance</h3>
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Mass Balance (kg/day)</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={hardnessChartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                    <YAxis axisLine={false} tickLine={false} />
-                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                    <Legend />
-                    <Bar dataKey="Calcium" name="Ca" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Magnesium" name="Mg" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                    <Legend wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold' }} />
+                    <Bar dataKey="Ca" name="Calcium" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Mg" name="Magnesium" fill="#a855f7" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
-
           </div>
         </div>
 
-        {/* Engineering Config (Bottom Row) */}
+        {/* BOTTOM ENGINEERING CONFIG */}
         <div className="mt-8">
-          <InputSection title="Engineering & Hydraulics" icon="fa-industry">
-            <div className="flex flex-col justify-center bg-blue-50/50 p-4 rounded-xl border border-blue-100 col-span-1 md:col-span-1 lg:col-span-1">
-              <label className="block text-[10px] font-bold text-blue-900 mb-3 tracking-widest uppercase text-center">Treatment Mode</label>
-              <div className="flex items-center justify-center gap-4">
-                <span className={`text-[10px] font-bold ${!plant.sodaAshEnabled ? 'text-blue-700' : 'text-slate-400'}`}>LIME ONLY</span>
-                <button onClick={() => handlePlantChange('sodaAshEnabled', !plant.sodaAshEnabled)} className={`relative w-12 h-6 rounded-full transition-all shadow-md ${plant.sodaAshEnabled ? 'bg-blue-600' : 'bg-slate-300'}`}>
-                  <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${plant.sodaAshEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                </button>
-                <span className={`text-[10px] font-bold ${plant.sodaAshEnabled ? 'text-blue-700' : 'text-slate-400'}`}>LIME + SODA</span>
+          <InputSection title="Plant Design & Hydraulics" icon="fa-industry">
+            <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase block text-blue-800">Add Soda Ash?</span>
+                <p className="text-[9px] text-blue-500">Enable for Non-Carbonate removal</p>
               </div>
+              <button onClick={() => handlePlantChange('sodaAshEnabled', !plant.sodaAshEnabled)} className={`relative w-12 h-6 rounded-full transition-all shadow-inner ${plant.sodaAshEnabled ? 'bg-blue-600' : 'bg-slate-300'}`}>
+                <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${plant.sodaAshEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
+              </button>
             </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Plant Flow (ML/d)</label>
-              <input type="number" value={plant.dailyFlow} onChange={e => handlePlantChange('dailyFlow', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Units (#)</label>
-              <input type="number" value={plant.clarifierCount} onChange={e => handlePlantChange('clarifierCount', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Design HLR (m/h)</label>
-              <input type="number" step="0.1" value={plant.hlr} onChange={e => handlePlantChange('hlr', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Design SLR (kg/m²/h)</label>
-              <input type="number" step="0.1" value={plant.solidsLoadingRate} onChange={e => handlePlantChange('solidsLoadingRate', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
+            <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Flow (ML/d)</label><input type="number" value={plant.dailyFlow} onChange={e => handlePlantChange('dailyFlow', e.target.value)} className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
+            <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Units (#)</label><input type="number" value={plant.clarifierCount} onChange={e => handlePlantChange('clarifierCount', e.target.value)} className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
+            <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Design HLR (m/h)</label><input type="number" step="0.1" value={plant.hlr} onChange={e => handlePlantChange('hlr', e.target.value)} className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
           </InputSection>
         </div>
       </main>
 
-      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3 text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest z-40 shadow-inner">
-        AquaSoft Pro | Engineering Assessment Tool | All calculations stoichiometric | SI Units
-      </footer>
-
-      {/* History Sidebar */}
+      {/* History Slide-over */}
       {isHistoryOpen && (
-        <div className="fixed inset-0 z-[60] overflow-hidden">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsHistoryOpen(false)}></div>
-          <div className="absolute inset-y-0 right-0 max-w-full flex">
-            <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-400">
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-blue-50/30">
-                <h2 className="text-xl font-bold flex items-center gap-2"><i className="fa-solid fa-clock-rotate-left text-blue-600"></i> Scenario History</h2>
-                <button onClick={() => setIsHistoryOpen(false)} className="text-slate-400 hover:text-slate-600 transition p-2"><i className="fa-solid fa-xmark text-xl"></i></button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {logs.length === 0 ? <p className="text-center text-slate-400 py-24 font-bold tracking-widest uppercase text-xs opacity-50">No saved scenarios.</p> : logs.map(log => (
-                  <div key={log.id} onClick={() => loadLog(log)} className="group bg-slate-50 hover:bg-white hover:ring-2 hover:ring-blue-500 hover:shadow-xl rounded-2xl p-5 border border-slate-200 transition cursor-pointer relative">
-                    <button onClick={(e) => deleteLog(log.id, e)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-2"><i className="fa-solid fa-trash-can"></i></button>
-                    <div className="mb-4">
-                      <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">{new Date(log.timestamp).toLocaleDateString()}</span>
-                      <h4 className="font-bold text-slate-800 text-lg leading-tight mt-1">{log.label}</h4>
-                    </div>
-                    <div className="grid grid-cols-2 gap-y-3 text-[11px] text-slate-500 font-medium">
-                      <div className="flex items-center gap-2"><i className="fa-solid fa-droplet text-blue-400"></i> <span>{log.plant.dailyFlow} ML/d</span></div>
-                      <div className="flex items-center gap-2"><i className="fa-solid fa-dollar-sign text-emerald-400"></i> <span>${log.results.totalDailyCost.toFixed(0)}/day</span></div>
-                    </div>
+        <div className="fixed inset-0 z-[60] flex items-center justify-end">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsHistoryOpen(false)}></div>
+          <div className="relative w-full max-w-md h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-6 border-b flex justify-between items-center bg-blue-50/50">
+              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2"><i className="fa-solid fa-clock-rotate-left text-blue-600"></i> Scenario History</h2>
+              <button onClick={() => setIsHistoryOpen(false)} className="w-10 h-10 rounded-full hover:bg-white transition flex items-center justify-center text-slate-400 hover:text-slate-600"><i className="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {logs.length === 0 ? (
+                <div className="text-center py-20">
+                  <i className="fa-solid fa-folder-open text-4xl text-slate-200 mb-4"></i>
+                  <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">No saved scenarios.</p>
+                </div>
+              ) : logs.map(log => (
+                <div key={log.id} onClick={() => loadLog(log)} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl hover:border-blue-400 hover:shadow-xl transition cursor-pointer relative group">
+                  <button onClick={(e) => deleteLog(log.id, e)} className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition p-1"><i className="fa-solid fa-trash-can"></i></button>
+                  <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-1">{new Date(log.timestamp).toLocaleDateString()}</p>
+                  <h4 className="font-bold text-slate-800 text-lg mb-2">{log.label}</h4>
+                  <div className="flex gap-4 text-xs font-medium text-slate-500">
+                    <span className="flex items-center gap-1"><i className="fa-solid fa-water"></i> {log.plant.dailyFlow} ML/d</span>
+                    <span className="flex items-center gap-1"><i className="fa-solid fa-dollar-sign text-emerald-500"></i> {log.results.totalDailyCost.toFixed(0)}/d</span>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       )}
+
+      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 py-3 text-center text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        AquaSoft Pro | Engineering Assessment Utility | All Units SI
+      </footer>
     </div>
   );
 };
