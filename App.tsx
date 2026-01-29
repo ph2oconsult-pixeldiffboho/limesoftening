@@ -11,7 +11,7 @@ const App: React.FC = () => {
   // State for raw water
   const [raw, setRaw] = useState<RawWaterData>({
     ph: 7.8,
-    conductivity: 45, // 45 mS/m corresponds to 450 μS/cm
+    conductivity: 450, // Updated to μS/cm
     calcium: 180,
     magnesium: 60,
     totalHardness: 240,
@@ -172,7 +172,7 @@ const App: React.FC = () => {
                 <input type="number" step="0.1" value={raw.ph} onChange={e => handleRawChange('ph', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Conductivity (mS/m)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Conductivity (μS/cm)</label>
                 <input type="number" value={raw.conductivity} onChange={e => handleRawChange('conductivity', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div>
@@ -457,7 +457,7 @@ const App: React.FC = () => {
       )}
 
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3 text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest z-40">
-        AquaSoft Pro | Water Treatment Engineering Assessment | All units SI (mg/L, mS/m, ML/d, m/h)
+        AquaSoft Pro | Water Treatment Engineering Assessment | All units SI (mg/L, μS/cm, ML/d, m/h)
       </footer>
     </div>
   );
