@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { RawWaterData, TargetWaterData, PlantData, CalculationResults, LogEntry } from './types';
 import { calculateSoftening } from './utils/calculations';
@@ -26,7 +27,7 @@ const DEFAULT_PLANT: PlantData = {
   clarifierCount: 2,
   hlr: 1.5,
   solidsLoadingRate: 5.0,
-  sodaAshEnabled: false, // Default to Lime Only to show the limit logic
+  sodaAshEnabled: false,
 };
 
 const App: React.FC = () => {
@@ -120,7 +121,7 @@ const App: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 selection:bg-blue-100">
       <nav className="bg-blue-700 text-white shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -156,43 +157,43 @@ const App: React.FC = () => {
           <div className="lg:col-span-7 space-y-6">
             <InputSection title="Raw Water Quality" icon="fa-flask-vial">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">pH</label>
-                <input type="number" step="0.1" value={raw.ph} onChange={e => handleRawChange('ph', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">pH Units</label>
+                <input type="number" step="0.1" value={raw.ph} onChange={e => handleRawChange('ph', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Conductivity (μS/cm)</label>
-                <input type="number" value={raw.conductivity} onChange={e => handleRawChange('conductivity', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Conductivity (μS/cm)</label>
+                <input type="number" value={raw.conductivity} onChange={e => handleRawChange('conductivity', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Calcium (mg/L as CaCO₃)</label>
-                <input type="number" value={raw.calcium} onChange={e => handleRawChange('calcium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Calcium (mg/L CaCO₃)</label>
+                <input type="number" value={raw.calcium} onChange={e => handleRawChange('calcium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Magnesium (mg/L as CaCO₃)</label>
-                <input type="number" value={raw.magnesium} onChange={e => handleRawChange('magnesium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Magnesium (mg/L CaCO₃)</label>
+                <input type="number" value={raw.magnesium} onChange={e => handleRawChange('magnesium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Alkalinity (mg/L as CaCO₃)</label>
-                <input type="number" value={raw.alkalinity} onChange={e => handleRawChange('alkalinity', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Alkalinity (mg/L CaCO₃)</label>
+                <input type="number" value={raw.alkalinity} onChange={e => handleRawChange('alkalinity', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Total Hardness (mg/L as CaCO₃)</label>
-                <input type="number" value={raw.totalHardness} onChange={e => handleRawChange('totalHardness', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Total Hardness (mg/L)</label>
+                <input type="number" value={raw.totalHardness} onChange={e => handleRawChange('totalHardness', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
               </div>
             </InputSection>
 
             <InputSection title="Target Water Quality" icon="fa-bullseye">
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1">Target Calcium (mg/L)</label>
-                <input type="number" value={target.calcium} onChange={e => handleTargetChange('calcium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input type="number" value={target.calcium} onChange={e => handleTargetChange('calcium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1">Target Magnesium (mg/L)</label>
-                <input type="number" value={target.magnesium} onChange={e => handleTargetChange('magnesium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input type="number" value={target.magnesium} onChange={e => handleTargetChange('magnesium', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1">Target Hardness (mg/L)</label>
-                <input type="number" value={target.totalHardness} onChange={e => handleTargetChange('totalHardness', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input type="number" value={target.totalHardness} onChange={e => handleTargetChange('totalHardness', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
               </div>
             </InputSection>
 
@@ -211,45 +212,24 @@ const App: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1">Daily flow (ML/d)</label>
-                <input type="number" value={plant.dailyFlow} onChange={e => handlePlantChange('dailyFlow', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input type="number" value={plant.dailyFlow} onChange={e => handlePlantChange('dailyFlow', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Units</label>
-                <input type="number" value={plant.clarifierCount} onChange={e => handlePlantChange('clarifierCount', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Units (#)</label>
+                <input type="number" value={plant.clarifierCount} onChange={e => handlePlantChange('clarifierCount', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1">HLR (m/h)</label>
-                <input type="number" step="0.1" value={plant.hlr} onChange={e => handlePlantChange('hlr', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input type="number" step="0.1" value={plant.hlr} onChange={e => handlePlantChange('hlr', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
               </div>
             </InputSection>
-
-            {/* Engineering Insights Panel */}
-            <div className="bg-amber-50 rounded-xl border border-amber-200 p-6 shadow-sm">
-              <h3 className="text-amber-800 font-bold text-sm mb-3 flex items-center gap-2">
-                <i className="fa-solid fa-lightbulb"></i>
-                Engineering Softening Insights
-              </h3>
-              <div className="space-y-3 text-xs text-amber-900 leading-relaxed">
-                <p>
-                  <strong>pH Constraint:</strong> Magnesium removal effectively starts at <strong>pH 10.5</strong>, but targeting residual values below 10 mg/L (as CaCO₃) requires a <strong>pH of 11.0 - 11.4</strong>. This usually requires adding 20-40 mg/L of "excess lime".
-                </p>
-                {!plant.sodaAshEnabled && raw.magnesium > raw.alkalinity && (
-                  <p className="p-3 bg-amber-100 rounded-lg border border-amber-200">
-                    <strong>Stoichiometric Limit:</strong> In <span className="font-bold">Lime Only</span> mode, total hardness reduction is limited by available alkalinity. Removing 1 unit of Non-Carbonate Mg using lime simply releases 1 unit of Calcium back into the water. <span className="font-bold">Total Hardness will not decrease further without Soda Ash.</span>
-                  </p>
-                )}
-                <p>
-                  <strong>Sludge Note:</strong> High magnesium removal significantly increases sludge volume due to the bulky nature of Mg(OH)₂ floc compared to CaCO₃.
-                </p>
-              </div>
-            </div>
           </div>
 
           <div className="lg:col-span-5 space-y-6">
             <div className={`bg-gradient-to-br transition-all duration-700 ${plant.sodaAshEnabled ? 'from-blue-700 to-blue-900' : 'from-indigo-800 to-slate-900'} text-white rounded-2xl p-6 shadow-2xl relative overflow-hidden`}>
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
               <h3 className="text-lg font-bold mb-6 flex items-center gap-2 relative z-10">
-                <i className="fa-solid fa-vial-circle-check text-blue-300"></i> Softening Output
+                <i className="fa-solid fa-vial-circle-check text-blue-300"></i> Softening Results
               </h3>
               <div className="grid grid-cols-2 gap-4 relative z-10">
                 <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20">
@@ -277,36 +257,27 @@ const App: React.FC = () => {
 
             <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
               <h3 className="font-semibold text-slate-800 mb-6 flex items-center gap-2">
-                <i className="fa-solid fa-box text-blue-600"></i> Daily Requirements
+                <i className="fa-solid fa-box text-blue-600"></i> Performance Summary
               </h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-4 bg-blue-50/50 rounded-xl border border-blue-100/50">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-sm"><i className="fa-solid fa-scale-balanced"></i></div>
-                    <div><p className="text-sm font-bold text-slate-700">Daily Lime</p><p className="text-[10px] text-slate-500 uppercase">Ca(OH)₂ Mass</p></div>
-                  </div>
+                  <div><p className="text-sm font-bold text-slate-700">Daily Lime</p><p className="text-[10px] text-slate-500 uppercase">Mass Required</p></div>
                   <p className="text-xl font-black text-slate-900">{results.totalLimeDaily.toLocaleString()} <span className="text-xs font-normal">kg/d</span></p>
                 </div>
-                <div className={`flex justify-between items-center p-4 bg-purple-50/50 rounded-xl border border-purple-100/50 ${!plant.sodaAshEnabled ? 'opacity-20 grayscale' : ''}`}>
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 shadow-sm"><i className="fa-solid fa-cubes"></i></div>
-                    <div><p className="text-sm font-bold text-slate-700">Daily Soda Ash</p><p className="text-[10px] text-slate-500 uppercase">Na₂CO₃ Mass</p></div>
-                  </div>
-                  <p className="text-xl font-black text-slate-900">{results.totalSodaDaily.toLocaleString()} <span className="text-xs font-normal">kg/d</span></p>
-                </div>
                 <div className="flex justify-between items-center p-4 bg-amber-50 rounded-xl border border-amber-200">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shadow-sm"><i className="fa-solid fa-water-ladder"></i></div>
-                    <div><p className="text-sm font-bold text-amber-800">Dry Sludge</p><p className="text-[10px] text-amber-600 font-bold uppercase">Total Solids</p></div>
-                  </div>
+                  <div><p className="text-sm font-bold text-amber-800">Dry Sludge</p><p className="text-[10px] text-amber-600 font-bold uppercase">Sludge Production</p></div>
                   <p className="text-xl font-black text-amber-900">{results.totalSludgeDaily.toLocaleString()} <span className="text-xs font-normal">kg/d</span></p>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <div><p className="text-sm font-bold text-slate-700">Unit Diameter</p><p className="text-[10px] text-slate-500 uppercase">Per Clarifier</p></div>
+                  <p className="text-xl font-black text-slate-900">{results.clarifierDiameter.toFixed(1)} <span className="text-xs font-normal">m</span></p>
                 </div>
               </div>
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
               <h3 className="font-semibold text-slate-800 mb-6 flex items-center gap-2">
-                <i className="fa-solid fa-chart-column text-blue-600"></i> Performance Graph
+                <i className="fa-solid fa-chart-column text-blue-600"></i> Hardness Profile
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -326,10 +297,6 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3 text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest z-40">
-        AquaSoft Pro | Water Treatment Engineering Assessment | SI Units: mg/L, μS/cm, ML/d, m/h
-      </footer>
-
       {isHistoryOpen && (
         <div className="fixed inset-0 z-[60] overflow-hidden">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsHistoryOpen(false)}></div>
@@ -347,10 +314,6 @@ const App: React.FC = () => {
                       <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">{new Date(log.timestamp).toLocaleDateString()}</span>
                       <h4 className="font-bold text-slate-800 text-lg leading-tight mt-1">{log.label}</h4>
                     </div>
-                    <div className="grid grid-cols-2 gap-y-3 text-[11px] text-slate-500 font-medium">
-                      <div className="flex items-center gap-2"><i className="fa-solid fa-droplet text-blue-400"></i> <span>{log.plant.dailyFlow} ML/d</span></div>
-                      <div className="flex items-center gap-2"><i className="fa-solid fa-calculator text-emerald-400"></i> <span>{log.results.totalLimeDaily.toFixed(0)} kg/d lime</span></div>
-                    </div>
                   </div>
                 ))}
               </div>
@@ -358,6 +321,10 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3 text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest z-40">
+        AquaSoft Pro | Water Treatment Assessment | SI Units
+      </footer>
     </div>
   );
 };
