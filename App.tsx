@@ -7,32 +7,38 @@ import {
   PieChart, Pie, Cell 
 } from 'recharts';
 
+const DEFAULT_RAW: RawWaterData = {
+  ph: 7.8,
+  conductivity: 450,
+  calcium: 180,
+  magnesium: 60,
+  totalHardness: 240,
+  alkalinity: 120,
+};
+
+const DEFAULT_TARGET: TargetWaterData = {
+  calcium: 60,
+  magnesium: 10,
+  totalHardness: 70,
+};
+
+const DEFAULT_PLANT: PlantData = {
+  dailyFlow: 10,
+  clarifierCount: 2,
+  hlr: 1.5,
+  solidsLoadingRate: 5.0,
+  sodaAshEnabled: true,
+};
+
 const App: React.FC = () => {
   // State for raw water
-  const [raw, setRaw] = useState<RawWaterData>({
-    ph: 7.8,
-    conductivity: 450, // Updated to μS/cm
-    calcium: 180,
-    magnesium: 60,
-    totalHardness: 240,
-    alkalinity: 120,
-  });
+  const [raw, setRaw] = useState<RawWaterData>(DEFAULT_RAW);
 
   // State for targets
-  const [target, setTarget] = useState<TargetWaterData>({
-    calcium: 60,
-    magnesium: 10,
-    totalHardness: 70,
-  });
+  const [target, setTarget] = useState<TargetWaterData>(DEFAULT_TARGET);
 
   // State for plant
-  const [plant, setPlant] = useState<PlantData>({
-    dailyFlow: 10,
-    clarifierCount: 2,
-    hlr: 1.5,
-    solidsLoadingRate: 5.0,
-    sodaAshEnabled: true,
-  });
+  const [plant, setPlant] = useState<PlantData>(DEFAULT_PLANT);
 
   // History State
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -68,6 +74,15 @@ const App: React.FC = () => {
     setLogs([newLog, ...logs]);
     setLogLabel("");
     alert("Scenario saved to history!");
+  };
+
+  const handleRefresh = () => {
+    if (window.confirm("Are you sure you want to reset all inputs to defaults?")) {
+      setRaw(DEFAULT_RAW);
+      setTarget(DEFAULT_TARGET);
+      setPlant(DEFAULT_PLANT);
+      setLogLabel("");
+    }
   };
 
   const loadLog = (log: LogEntry) => {
@@ -127,6 +142,14 @@ const App: React.FC = () => {
             <h1 className="text-xl font-bold tracking-tight">AquaSoft Pro <span className="font-light text-blue-200 text-sm">v1.2</span></h1>
           </div>
           <div className="flex gap-4">
+            <button 
+              onClick={handleRefresh}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-800 hover:bg-blue-900 rounded-lg transition text-sm font-medium border border-blue-600"
+              title="Reset all inputs"
+            >
+              <i className="fa-solid fa-rotate-right"></i>
+              Refresh
+            </button>
             <button 
               onClick={() => setIsHistoryOpen(true)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-800 hover:bg-blue-900 rounded-lg transition text-sm font-medium border border-blue-600"
