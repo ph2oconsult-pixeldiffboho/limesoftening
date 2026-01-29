@@ -151,7 +151,7 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-white/10 p-2 rounded-lg"><i className="fa-solid fa-droplet"></i></div>
-            <h1 className="text-xl font-bold tracking-tight">AquaSoft Pro <span className="font-light text-blue-200 text-sm opacity-60">v1.7</span></h1>
+            <h1 className="text-xl font-bold tracking-tight">AquaSoft Pro <span className="font-light text-blue-200 text-sm opacity-60">v1.8</span></h1>
           </div>
           <div className="flex gap-4">
             <button onClick={handleRefresh} className="px-4 py-2 bg-blue-800 hover:bg-blue-900 rounded-lg text-sm font-semibold border border-blue-600 transition flex items-center gap-2">
@@ -179,7 +179,6 @@ const App: React.FC = () => {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* LEFT COLUMN: INPUTS */}
           <div className="lg:col-span-7 space-y-8">
             <InputSection title="Raw Water Quality" icon="fa-flask-vial">
               <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">pH Units</label><input type="number" step="0.1" value={raw.ph} onChange={e => handleRawChange('ph', e.target.value)} className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
@@ -202,7 +201,6 @@ const App: React.FC = () => {
               <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Soda Ash ($/kg)</label><input type="number" step="0.01" value={plant.sodaAshUnitCost} onChange={e => handlePlantChange('sodaAshUnitCost', e.target.value)} className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" /></div>
             </InputSection>
 
-            {/* Optimization Tool */}
             <div className={`p-6 rounded-2xl border-2 transition-all shadow-sm ${isOptimal ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
               <div className="flex justify-between items-center mb-4">
                 <h3 className={`font-bold text-sm flex items-center gap-2 ${isOptimal ? 'text-emerald-800' : 'text-amber-800'}`}>
@@ -225,7 +223,6 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: RESULTS */}
           <div className="lg:col-span-5 space-y-8">
             <div className="bg-slate-900 text-white rounded-3xl p-8 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
@@ -280,7 +277,7 @@ const App: React.FC = () => {
             </div>
 
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Mass Balance (kg/day)</h3>
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Hardness Balance (mg/L)</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData}>
@@ -298,7 +295,6 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* BOTTOM ENGINEERING CONFIG */}
         <div className="mt-8">
           <InputSection title="Plant Design & Hydraulics" icon="fa-industry">
             <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex items-center justify-between">
@@ -317,7 +313,6 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* History Slide-over */}
       {isHistoryOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-end">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsHistoryOpen(false)}></div>
