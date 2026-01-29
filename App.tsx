@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { RawWaterData, TargetWaterData, PlantData, CalculationResults, LogEntry } from './types';
 import { calculateSoftening } from './utils/calculations';
