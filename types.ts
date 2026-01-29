@@ -19,6 +19,8 @@ export interface PlantData {
   hlr: number; // Hydraulic Loading Rate m/h
   solidsLoadingRate: number; // Solids Loading Rate kg/m²/h
   sodaAshEnabled: boolean;
+  limeUnitCost: number; // $/kg
+  sodaAshUnitCost: number; // $/kg
 }
 
 export interface AchievedWaterQuality {
@@ -34,6 +36,9 @@ export interface CalculationResults {
   totalLimeDaily: number; // kg/d
   totalSodaDaily: number; // kg/d
   totalSludgeDaily: number; // kg/d (dry mass)
+  dailyCostLime: number;
+  dailyCostSoda: number;
+  totalDailyCost: number;
   clarifierArea: number; // m² per unit
   clarifierDiameter: number; // m
   actualHLR: number; // m/h
