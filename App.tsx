@@ -26,7 +26,9 @@ const DEFAULT_PLANT: PlantData = {
   clarifierCount: 2,
   hlr: 1.5,
   solidsLoadingRate: 5.0,
-  sodaAshEnabled: false, // Default to Lime Only to show the limit logic
+  sodaAshEnabled: false,
+  limeUnitCost: 0.25, // $0.25/kg
+  sodaAshUnitCost: 0.65, // $0.65/kg
 };
 
 const App: React.FC = () => {
@@ -125,7 +127,7 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <i className="fa-solid fa-droplet text-2xl"></i>
-            <h1 className="text-xl font-bold tracking-tight">AquaSoft Pro <span className="font-light text-blue-200 text-sm">v1.3</span></h1>
+            <h1 className="text-xl font-bold tracking-tight">AquaSoft Pro <span className="font-light text-blue-200 text-sm">v1.4</span></h1>
           </div>
           <div className="flex gap-4">
             <button onClick={handleRefresh} className="flex items-center gap-2 px-4 py-2 bg-blue-800 hover:bg-blue-900 rounded-lg transition text-sm font-medium border border-blue-600">
@@ -196,6 +198,21 @@ const App: React.FC = () => {
               </div>
             </InputSection>
 
+            <InputSection title="Chemical Economics" icon="fa-coins">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Lime Cost ($/kg)</label>
+                <input type="number" step="0.01" value={plant.limeUnitCost} onChange={e => handlePlantChange('limeUnitCost', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Soda Ash Cost ($/kg)</label>
+                <input type="number" step="0.01" value={plant.sodaAshUnitCost} onChange={e => handlePlantChange('sodaAshUnitCost', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div className="flex items-center gap-3 bg-blue-50 p-3 rounded-lg border border-blue-100 h-fit self-end">
+                <i className="fa-solid fa-circle-info text-blue-500"></i>
+                <p className="text-[10px] text-blue-700 leading-tight">These costs drive the treatment pathway optimization logic.</p>
+              </div>
+            </InputSection>
+
             <InputSection title="Plant Configuration" icon="fa-industry">
               <div className="flex flex-col justify-center bg-blue-50/50 p-4 rounded-xl border border-blue-100 col-span-1 md:col-span-2 lg:col-span-3">
                 <label className="block text-[10px] font-bold text-blue-900 mb-3 tracking-widest uppercase">Softening Mode Selection</label>
@@ -222,30 +239,50 @@ const App: React.FC = () => {
                 <input type="number" step="0.1" value={plant.hlr} onChange={e => handlePlantChange('hlr', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
             </InputSection>
-
-            {/* Engineering Insights Panel */}
-            <div className="bg-amber-50 rounded-xl border border-amber-200 p-6 shadow-sm">
-              <h3 className="text-amber-800 font-bold text-sm mb-3 flex items-center gap-2">
-                <i className="fa-solid fa-lightbulb"></i>
-                Engineering Softening Insights
-              </h3>
-              <div className="space-y-3 text-xs text-amber-900 leading-relaxed">
-                <p>
-                  <strong>pH Constraint:</strong> Magnesium removal effectively starts at <strong>pH 10.5</strong>, but targeting residual values below 10 mg/L (as CaCO₃) requires a <strong>pH of 11.0 - 11.4</strong>. This usually requires adding 20-40 mg/L of "excess lime".
-                </p>
-                {!plant.sodaAshEnabled && raw.magnesium > raw.alkalinity && (
-                  <p className="p-3 bg-amber-100 rounded-lg border border-amber-200">
-                    <strong>Stoichiometric Limit:</strong> In <span className="font-bold">Lime Only</span> mode, total hardness reduction is limited by available alkalinity. Removing 1 unit of Non-Carbonate Mg using lime simply releases 1 unit of Calcium back into the water. <span className="font-bold">Total Hardness will not decrease further without Soda Ash.</span>
-                  </p>
-                )}
-                <p>
-                  <strong>Sludge Note:</strong> High magnesium removal significantly increases sludge volume due to the bulky nature of Mg(OH)₂ floc compared to CaCO₃.
-                </p>
-              </div>
-            </div>
           </div>
 
           <div className="lg:col-span-5 space-y-6">
+            {/* Optimization Recommendation Panel */}
+            <div className={`rounded-xl border-2 p-6 shadow-md transition-all ${
+              (plant.sodaAshEnabled && results.optimization.cheapestMode === 'LimeSoda') || (!plant.sodaAshEnabled && results.optimization.cheapestMode === 'LimeOnly')
+              ? 'bg-emerald-50 border-emerald-200'
+              : 'bg-amber-50 border-amber-200'
+            }`}>
+              <div className="flex justify-between items-start mb-4">
+                <h3 className={`font-bold text-sm flex items-center gap-2 ${
+                  (plant.sodaAshEnabled && results.optimization.cheapestMode === 'LimeSoda') || (!plant.sodaAshEnabled && results.optimization.cheapestMode === 'LimeOnly')
+                  ? 'text-emerald-800' : 'text-amber-800'
+                }`}>
+                  <i className="fa-solid fa-wand-magic-sparkles"></i>
+                  Optimization Recommendation
+                </h3>
+              </div>
+              <div className="space-y-3">
+                <p className="text-xs font-medium leading-relaxed">
+                  The most cost-effective treatment mode is <strong>{results.optimization.cheapestMode === 'LimeOnly' ? 'LIME ONLY' : 'LIME + SODA ASH'}</strong>.
+                </p>
+                {((plant.sodaAshEnabled && results.optimization.cheapestMode === 'LimeOnly') || (!plant.sodaAshEnabled && results.optimization.cheapestMode === 'LimeSoda')) ? (
+                  <div className="bg-white/50 p-3 rounded-lg border border-amber-200 flex flex-col gap-1">
+                    <p className="text-[11px] text-amber-900">
+                      Switching to {results.optimization.cheapestMode === 'LimeOnly' ? 'Lime Only' : 'Lime + Soda'} could save you roughly:
+                    </p>
+                    <p className="text-lg font-black text-amber-600">${results.optimization.potentialSavings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} / day</p>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-emerald-700">
+                    <i className="fa-solid fa-circle-check"></i>
+                    <span className="text-[11px] font-bold uppercase tracking-wide">Currently using optimal mode</span>
+                  </div>
+                )}
+                {!results.optimization.meetsTarget && (
+                  <p className="text-[10px] text-red-600 font-bold bg-red-50 p-2 rounded border border-red-100">
+                    <i className="fa-solid fa-triangle-exclamation mr-1"></i>
+                    Warning: Optimal cost mode may not meet hardness targets!
+                  </p>
+                )}
+              </div>
+            </div>
+
             <div className={`bg-gradient-to-br transition-all duration-700 ${plant.sodaAshEnabled ? 'from-blue-700 to-blue-900' : 'from-indigo-800 to-slate-900'} text-white rounded-2xl p-6 shadow-2xl relative overflow-hidden`}>
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
               <h3 className="text-lg font-bold mb-6 flex items-center gap-2 relative z-10">
@@ -268,9 +305,9 @@ const App: React.FC = () => {
                   <p className="text-[9px] opacity-70 mt-1 uppercase font-semibold">{results.softeningPh >= 11 ? 'Mg Stage' : 'Ca Stage'}</p>
                 </div>
                 <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20">
-                  <p className="text-blue-200 text-[10px] font-bold mb-1 uppercase">Final TH</p>
-                  <p className={`text-3xl font-bold ${!targetsMet ? 'text-amber-300' : 'text-white'}`}>{results.achieved.totalHardness.toFixed(0)} <span className="text-sm font-normal">mg/L</span></p>
-                  <p className="text-[9px] opacity-70 mt-1 uppercase">{!targetsMet ? 'Below Target' : 'Target Met'}</p>
+                  <p className="text-blue-200 text-[10px] font-bold mb-1 uppercase">Daily Cost</p>
+                  <p className="text-3xl font-bold">${results.totalDailyCost.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p>
+                  <p className="text-[9px] opacity-70 mt-1 uppercase">USD per day</p>
                 </div>
               </div>
             </div>
@@ -327,7 +364,7 @@ const App: React.FC = () => {
       </main>
 
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3 text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest z-40">
-        AquaSoft Pro | Water Treatment Engineering Assessment | SI Units: mg/L, μS/cm, ML/d, m/h
+        AquaSoft Pro | Engineering Assessment | SI Units: mg/L, μS/cm, ML/d, m/h
       </footer>
 
       {isHistoryOpen && (
