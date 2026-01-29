@@ -1,3 +1,4 @@
+              </div>
 import React, { useState, useEffect, useMemo } from 'react';
 import { RawWaterData, TargetWaterData, PlantData, LogEntry } from './types';
 import { calculateSoftening } from './utils/calculations';
@@ -42,21 +43,26 @@ const App: React.FC = () => {
   useEffect(() => {
     try {
       const savedLogs = localStorage.getItem('aquasoft_v2_logs');
-      if (savedLogs) setLogs(JSON.parse(savedLogs));
+      if (savedLogs) {
+        const parsed = JSON.parse(savedLogs);
+        if (Array.isArray(parsed)) setLogs(parsed);
+      }
     } catch (e) {
       console.error("Failed to load logs", e);
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('aquasoft_v2_logs', JSON.stringify(logs));
+    if (logs.length > 0) {
+      localStorage.setItem('aquasoft_v2_logs', JSON.stringify(logs));
+    }
   }, [logs]);
 
   const results = useMemo(() => calculateSoftening(raw, target, plant), [raw, target, plant]);
 
   const saveCurrentLog = () => {
     const newLog: LogEntry = {
-      id: crypto.randomUUID(),
+      id: Math.random().toString(36).substring(2, 9),
       timestamp: new Date().toISOString(),
       label: logLabel || `Scenario ${new Date().toLocaleTimeString()}`,
       raw: { ...raw },
@@ -64,7 +70,7 @@ const App: React.FC = () => {
       plant: { ...plant },
       results: { ...results }
     };
-    setLogs([newLog, ...logs]);
+    setLogs(prev => [newLog, ...prev]);
     setLogLabel("");
   };
 
@@ -142,8 +148,17 @@ const App: React.FC = () => {
             <p className="text-slate-500 mt-2 text-sm">Industrial water treatment stoichiometry and clarifier design.</p>
           </div>
           <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
-            <input type="text" placeholder="Scenario name..." value={logLabel} onChange={(e) => setLogLabel(e.target.value)} className="px-3 py-2 text-sm border-none focus:ring-0 outline-none w-48" />
-            <button onClick={saveCurrentLog} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">
+            <input 
+              type="text" 
+              placeholder="Scenario name..." 
+              value={logLabel} 
+              onChange={(e) => setLogLabel(e.target.value)} 
+              className="px-3 py-2 text-sm border-none focus:ring-0 outline-none w-48" 
+            />
+            <button 
+              onClick={saveCurrentLog} 
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2"
+            >
               <i className="fa-solid fa-floppy-disk"></i> Save
             </button>
           </div>
@@ -184,7 +199,10 @@ const App: React.FC = () => {
             <InputSection title="Plant Design & Costs" icon="fa-industry">
               <div className="col-span-full mb-4 bg-indigo-50 p-4 rounded-lg flex items-center justify-between">
                 <span className="text-sm font-bold text-indigo-900">Enable Soda Ash (Na₂CO₃)</span>
-                <button onClick={() => handlePlantChange('sodaAshEnabled', !plant.sodaAshEnabled)} className={`w-12 h-6 rounded-full transition-colors relative ${plant.sodaAshEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}>
+                <button 
+                  onClick={() => handlePlantChange('sodaAshEnabled', !plant.sodaAshEnabled)} 
+                  className={`w-12 h-6 rounded-full transition-colors relative ${plant.sodaAshEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                >
                   <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${plant.sodaAshEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
                 </button>
               </div>
